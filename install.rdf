@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='utf-8'?>
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+  <Description about="urn:mozilla:install-manifest">
+	<em:id>lull-the-tabs@Off.JustOff</em:id>
+	<em:version>1.0.3</em:version>
+	<em:type>2</em:type>
+	<em:bootstrap>true</em:bootstrap>
+	<em:name>Lull The Tabs</em:name>
+	<em:description>Unload inactive tabs to free up browser memory</em:description>
+	<em:creator>Off JustOff &lt;Off.Just.Off@gmail.com&gt;</em:creator>
+	<em:contributor>Philipp von Weitershausen</em:contributor>
+	<em:contributor>Szabolcs Hubai</em:contributor>
+	<em:homepageURL>https://github.com/JustOff/lull-the-tabs/</em:homepageURL>
+	<em:targetApplication>
+	  <Description>
+		<em:id>{8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}</em:id>
+		<em:minVersion>27.0.0</em:minVersion>
+		<em:maxVersion>27.*</em:maxVersion>
+	  </Description>
+	</em:targetApplication>
+	<em:targetApplication>
+	  <Description>
+		<em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+		<em:minVersion>45.0</em:minVersion>
+		<em:maxVersion>56.*</em:maxVersion>
+	  </Description>
+	</em:targetApplication>
+  </Description>
+</RDF>
