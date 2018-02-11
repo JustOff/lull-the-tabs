@@ -316,6 +316,11 @@ LullTheTabs.prototype = {
       "oncommand", "gBrowser.LullTheTabs.toggleWhitelist(gBrowser.mContextTab, event);");
     tabContextMenu.insertBefore(menuitem_neverUnload, openTabInWindow);
 
+    this.previousTab = null;
+    this.selectedTab = null;
+
+    aTabBrowser.tabContainer.addEventListener('TabSelect', this, false);
+    aTabBrowser.tabContainer.addEventListener('TabClose', this, false);
     tabContextMenu.addEventListener('popupshowing', this, false);
   },
 
@@ -338,6 +343,12 @@ LullTheTabs.prototype = {
     let tabContextMenu = document.getElementById("tabContextMenu");
     tabContextMenu.removeEventListener('popupshowing', this, false);
 
+    aTabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
+    aTabBrowser.tabContainer.removeEventListener('TabClose', this, false);
+
+    this.previousTab = null;
+    this.selectedTab = null;
+
     aTabBrowser.LullTheTabsTimer.done(aTabBrowser);
 
     delete aTabBrowser.LullTheTabsTimer;
@@ -345,8 +356,16 @@ LullTheTabs.prototype = {
   },
 
   handleEvent: function(aEvent) {
-    if (aEvent.type == "popupshowing") {
-      this.onPopupShowing(aEvent);
+    switch (aEvent.type) {
+      case 'popupshowing':
+        this.onPopupShowing(aEvent);
+        return;
+      case 'TabSelect':
+        this.onTabSelect(aEvent);
+        return;
+      case 'TabClose':
+        this.onTabClose(aEvent);
+        return;
     }
   },
 
@@ -416,6 +435,37 @@ LullTheTabs.prototype = {
     menuitem_neverUnload.removeAttribute("hidden");
   },
 
+  onTabSelect: function(event) {
+    this.previousTab = this.selectedTab;
+    this.selectedTab = event.originalTarget;
+  },
+
+  onTabClose: function(aEvent) {
+    // Check selectOnClose option.
+    let selectOnClose = Services.prefs.getIntPref(branch + "selectOnClose");
+    if (selectOnClose == 0) {
+      // Return if browser default behaviour is selected.
+      return;
+    }
+
+    let tab = aEvent.originalTarget;
+    // If we are on the selected tab.
+    if (tab.selected) {
+      if (selectOnClose == 1) {
+        // Find the closest tab that isn't on the bar tab.
+        let activeTab = findClosestLoadedTab(tab, this.tabBrowser);
+        if (activeTab) {
+          this.tabBrowser.selectedTab = activeTab;
+        }
+      } else {
+        // Or select the previous tab.
+        if (this.previousTab) {
+          this.tabBrowser.selectedTab = this.previousTab;
+        }
+      }
+    }
+  },
+
   /**
    * Unload a tab.
    */
@@ -429,12 +479,20 @@ LullTheTabs.prototype = {
 
     let tabbrowser = this.tabBrowser;
 
-    // Make sure that we're not on this tab.  If we are, find the
-    // closest tab that isn't on the bar tab.
+    // Make sure that we're not on this tab.
     if (aTab.selected) {
-      let activeTab = findClosestLoadedTab(aTab, tabbrowser);
-      if (activeTab) {
-        tabbrowser.selectedTab = activeTab;
+      // If we are, then check selectOnUnload option.
+      if (Services.prefs.getIntPref(branch + "selectOnUnload") == 0) {
+        // Find the closest tab that isn't on the bar tab.
+        let activeTab = findClosestLoadedTab(aTab, tabbrowser);
+        if (activeTab) {
+          tabbrowser.selectedTab = activeTab;
+        }
+      } else {
+        // Or select the previous tab.
+        if (this.previousTab) {
+          tabbrowser.selectedTab = this.previousTab;
+        }
       }
     }
 
@@ -595,6 +653,8 @@ function startup(data, reason) {
   defaultBranch.setIntPref("unloadTimeout", 120);
   defaultBranch.setCharPref("exceptionList", "");
   defaultBranch.setBoolPref("importBarTab", true);
+  defaultBranch.setIntPref("selectOnUnload", 0);
+  defaultBranch.setIntPref("selectOnClose", 0);
 
   if (Services.prefs.getBoolPref(branch + "importBarTab")) {
     try {
