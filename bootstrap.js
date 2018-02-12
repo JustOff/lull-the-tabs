@@ -58,6 +58,7 @@ LullTheTabsTimer.prototype = {
 
     this.previousTab = null;
     this.selectedTab = aTabBrowser.selectedTab;
+    this.startAllTimers();
   },
 
   done: function(aTabBrowser) {
@@ -65,12 +66,10 @@ LullTheTabsTimer.prototype = {
     aTabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
     aTabBrowser.tabContainer.removeEventListener('TabClose', this, false);
 
+    this.clearAllTimers();
     this.previousTab = null;
     this.selectedTab = null;
 
-    let visibleTabs = aTabBrowser.visibleTabs;
-    for (let i = 0; i < visibleTabs.length; i++) {
-      this.clearTimer(visibleTabs[i]);
     }
   },
 
@@ -144,7 +143,23 @@ LullTheTabsTimer.prototype = {
     let window = aTab.ownerDocument.defaultView;
     window.clearTimeout(aTab._lullTheTabsTimer);
     aTab._lullTheTabsTimer = null;
-  }
+  },
+
+  startAllTimers: function() {
+    let visibleTabs = this.tabbrowser.visibleTabs;
+    for (let i = 0; i < visibleTabs.length; i++) {
+      if (!visibleTabs[i].selected) {
+        this.startTimer(visibleTabs[i]);
+      }
+    }
+  },
+
+  clearAllTimers: function() {
+    let visibleTabs = this.tabbrowser.visibleTabs;
+    for (let i = 0; i < visibleTabs.length; i++) {
+      this.clearTimer(visibleTabs[i]);
+    }
+  },
 };
 
 function hasPendingAttribute(aTab) {
