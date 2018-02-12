@@ -693,7 +693,7 @@ function startup(aData, aReason) {
   defaultBranch.setCharPref("exceptionList", "");
   defaultBranch.setBoolPref("importBarTab", true);
   defaultBranch.setIntPref("selectOnUnload", 0);
-  defaultBranch.setIntPref("selectOnClose", 0);
+  defaultBranch.setIntPref("selectOnClose", 1);
 
   if (Services.prefs.getBoolPref(branch + "importBarTab")) {
     try {
