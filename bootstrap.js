@@ -75,6 +75,7 @@ LullTheTabsTimer.prototype = {
     this.clearAllTimers();
     this.previousTab = null;
     this.selectedTab = null;
+    this.tabbrowser = null;
   },
 
   observe: function(aSubject, aTopic, aData) {
@@ -389,6 +390,7 @@ LullTheTabs.prototype = {
 
     delete aTabBrowser.LullTheTabsTimer;
     delete aTabBrowser.LullTheTabs;
+    this.tabBrowser = null;
   },
 
   handleEvent: function(aEvent) {
@@ -647,6 +649,7 @@ let globalPrefsWatcher = {
   },
   unregister: function () {
     this.prefBranch.removeObserver("", this);
+    this.prefBranch = null;
   }
 }
 
