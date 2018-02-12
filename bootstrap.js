@@ -59,6 +59,9 @@ LullTheTabsTimer.prototype = {
     this.previousTab = null;
     this.selectedTab = aTabBrowser.selectedTab;
     this.startAllTimers();
+
+    this.prefBranch = Services.prefs.getBranch(branch);
+    this.prefBranch.addObserver("", this, false);
   },
 
   done: function(aTabBrowser) {
@@ -66,10 +69,28 @@ LullTheTabsTimer.prototype = {
     aTabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
     aTabBrowser.tabContainer.removeEventListener('TabClose', this, false);
 
+    this.prefBranch.removeObserver("", this);
+    this.prefBranch = null;
+
     this.clearAllTimers();
     this.previousTab = null;
     this.selectedTab = null;
+  },
 
+  observe: function(aSubject, aTopic, aData) {
+    if (aTopic != "nsPref:changed") return;
+    switch (aData) {
+      case 'autoUnload':
+        if (Services.prefs.getBoolPref(branch + "autoUnload")) {
+          this.startAllTimers();
+        } else {
+          this.clearAllTimers();
+        }
+        break;
+      case 'unloadTimeout':
+        this.clearAllTimers();
+        this.startAllTimers();
+        break;
     }
   },
 
