@@ -1,29 +1,29 @@
 <?xml version="1.0" ?>
 <vbox xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-  <setting type="bool" pref="browser.sessionstore.restore_on_demand" title="Enable tab unloading">
+  <setting type="bool" pref="browser.sessionstore.restore_on_demand" title="Enable tab unloading:">
   And don't load tabs until selected on browser start
   </setting>
-  <setting type="bool" pref="browser.sessionstore.restore_pinned_tabs_on_demand" title="Allow unloading of pinned tabs">
+  <setting type="bool" pref="browser.sessionstore.restore_pinned_tabs_on_demand" title="Allow unloading of pinned tabs:">
   And don't load them on browser start
   </setting>
-  <setting type="radio" pref="extensions.lull-the-tabs.selectOnUnload" title="When unloading a tab select">
+  <setting type="radio" pref="extensions.lull-the-tabs.selectOnUnload" title="When unloading a tab, select:">
   <radiogroup orient="horizontal" preference="">
-    <radio  value="0" label="nearest loaded tab"/>
-    <radio  value="1" label="previously selected tab"/>
+    <radio value="0" label="nearest loaded tab"/>
+    <radio value="1" label="previously selected tab"/>
     </radiogroup>
   </setting>
-  <setting type="bool" pref="extensions.lull-the-tabs.autoUnload" title="Automatically unload inactive tabs">
+  <setting type="bool" pref="extensions.lull-the-tabs.autoUnload" title="Automatically unload inactive tabs:">
   </setting>
-  <setting type="integer" pref="extensions.lull-the-tabs.unloadTimeout" title="Unload timeout, in minutes">
+  <setting type="integer" pref="extensions.lull-the-tabs.unloadTimeout" title="Unload timeout, in minutes:">
   </setting>
-  <setting type="string" pref="extensions.lull-the-tabs.exceptionList" title="Domain exception list">
+  <setting type="string" pref="extensions.lull-the-tabs.exceptionList" title="Domain exception list:">
   Use ; as a delimiter for multiple domains
   </setting>
-  <setting type="radio" pref="extensions.lull-the-tabs.selectOnClose" title="When closing a tab select">
+  <setting type="radio" pref="extensions.lull-the-tabs.selectOnClose" title="When closing a tab, select:">
   <radiogroup orient="horizontal" preference="">
+    <radio value="1" label="nearest loaded tab"/>
+    <radio value="2" label="previously selected tab"/>
     <radio value="0" label="browser default"/>
-    <radio  value="1" label="nearest loaded tab"/>
-    <radio  value="2" label="previously selected tab"/>
     </radiogroup>
   </setting>
 </vbox>
