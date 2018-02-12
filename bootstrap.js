@@ -696,9 +696,20 @@ function startup(aData, aReason) {
   defaultBranch.setIntPref("selectOnClose", 1);
 
   if (Services.prefs.getBoolPref(branch + "importBarTab")) {
+    Services.prefs.setBoolPref(branch + "importBarTab", false);
     try {
-      Services.prefs.setBoolPref(branch + "importBarTab", false);
       Services.prefs.setCharPref(branch + "exceptionList", Services.prefs.getCharPref("extensions.bartab.whitelist"));
+    } catch (e) {}
+    try {
+      Services.prefs.setBoolPref(branch + "autoUnload", Services.prefs.getBoolPref("extensions.bartab.unloadAfterTimeout"));
+      Services.prefs.setIntPref(branch + "unloadTimeout",
+                                Math.round(Services.prefs.getIntPref("extensions.bartab.timeoutUnit") *
+                                           Services.prefs.getIntPref("extensions.bartab.timeoutValue") / 60));
+    } catch (e) {}
+    try {
+      if (!Services.prefs.getBoolPref("extensions.bartab.findClosestLoadedTab")) {
+        Services.prefs.setIntPref(branch + "selectOnClose", 0);
+      }
     } catch (e) {}
   }
 
