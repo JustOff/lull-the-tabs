@@ -51,7 +51,7 @@ function LullTheTabsTimer(aTabBrowser) {
 LullTheTabsTimer.prototype = {
 
   init: function(aTabBrowser) {
-    this.tabbrowser = aTabBrowser;
+    this.tabBrowser = aTabBrowser;
     aTabBrowser.tabContainer.addEventListener('TabOpen', this, false);
     aTabBrowser.tabContainer.addEventListener('TabSelect', this, false);
     aTabBrowser.tabContainer.addEventListener('TabClose', this, false);
@@ -75,7 +75,7 @@ LullTheTabsTimer.prototype = {
     this.clearAllTimers();
     this.previousTab = null;
     this.selectedTab = null;
-    this.tabbrowser = null;
+    this.tabBrowser = null;
   },
 
   observe: function(aSubject, aTopic, aData) {
@@ -95,16 +95,16 @@ LullTheTabsTimer.prototype = {
     }
   },
 
-  handleEvent: function(event) {
-    switch (event.type) {
+  handleEvent: function(aEvent) {
+    switch (aEvent.type) {
     case 'TabOpen':
-      this.onTabOpen(event);
+      this.onTabOpen(aEvent);
       return;
     case 'TabSelect':
-      this.onTabSelect(event);
+      this.onTabSelect(aEvent);
       return;
     case 'TabClose':
-      this.onTabClose(event);
+      this.onTabClose(aEvent);
       return;
     }
   },
@@ -117,19 +117,19 @@ LullTheTabsTimer.prototype = {
     this.startTimer(tab);
   },
 
-  onTabClose: function(event) {
-    this.clearTimer(event.originalTarget);
-    if (event.originalTarget == this.selectedTab) {
+  onTabClose: function(aEvent) {
+    this.clearTimer(aEvent.originalTarget);
+    if (aEvent.originalTarget == this.selectedTab) {
       this.selectedTab = null;
     };
-    if (event.originalTarget == this.previousTab) {
+    if (aEvent.originalTarget == this.previousTab) {
       this.previousTab = null;
     };
   },
 
-  onTabSelect: function(event) {
+  onTabSelect: function(aEvent) {
     this.previousTab = this.selectedTab;
-    this.selectedTab = event.originalTarget;
+    this.selectedTab = aEvent.originalTarget;
 
     if (this.previousTab) {
       // The previous tab may not be available because it has
@@ -157,7 +157,7 @@ LullTheTabsTimer.prototype = {
     aTab._lullTheTabsTimer = window.setTimeout(function() {
       // The timer will be removed automatically since
       // unloadTab() will close and replace the original tab.
-      self.tabbrowser.LullTheTabs.unloadTab(aTab);
+      self.tabBrowser.LullTheTabs.unloadTab(aTab);
     }, timeout);
   },
 
@@ -168,7 +168,7 @@ LullTheTabsTimer.prototype = {
   },
 
   startAllTimers: function() {
-    let visibleTabs = this.tabbrowser.visibleTabs;
+    let visibleTabs = this.tabBrowser.visibleTabs;
     for (let i = 0; i < visibleTabs.length; i++) {
       if (!visibleTabs[i].selected) {
         this.startTimer(visibleTabs[i]);
@@ -177,7 +177,7 @@ LullTheTabsTimer.prototype = {
   },
 
   clearAllTimers: function() {
-    let visibleTabs = this.tabbrowser.visibleTabs;
+    let visibleTabs = this.tabBrowser.visibleTabs;
     for (let i = 0; i < visibleTabs.length; i++) {
       this.clearTimer(visibleTabs[i]);
     }
@@ -473,9 +473,9 @@ LullTheTabs.prototype = {
     menuitem_neverUnload.removeAttribute("hidden");
   },
 
-  onTabSelect: function(event) {
+  onTabSelect: function(aEvent) {
     this.previousTab = this.selectedTab;
-    this.selectedTab = event.originalTarget;
+    this.selectedTab = aEvent.originalTarget;
   },
 
   onTabClose: function(aEvent) {
@@ -634,8 +634,8 @@ LullTheTabs.prototype = {
 };
 
 let globalPrefsWatcher = {
-  observe: function (subject, topic, data) {
-    if (topic != "nsPref:changed" || data != "exceptionList") return;
+  observe: function(aSubject, aTopic, aData) {
+    if (aTopic != "nsPref:changed" || aData != "exceptionList") return;
 
     let exceptionList = Services.prefs.getBranch(branch).getComplexValue("exceptionList", Ci.nsISupportsString).data;
     if (exceptionList == "") {
@@ -643,22 +643,22 @@ let globalPrefsWatcher = {
     }
     domRegex = null;
   },
-  register: function () {
+  register: function() {
     this.prefBranch = Services.prefs.getBranch(branch);
     this.prefBranch.addObserver("", this, false);
   },
-  unregister: function () {
+  unregister: function() {
     this.prefBranch.removeObserver("", this);
     this.prefBranch = null;
   }
 }
 
-function BrowserWindowObserver(handlers) {
-  this.handlers = handlers;
+function BrowserWindowObserver(aHandlers) {
+  this.handlers = aHandlers;
 }
 
 BrowserWindowObserver.prototype = {
-  observe: function (aSubject, aTopic, aData) {
+  observe: function(aSubject, aTopic, aData) {
     if (aTopic == "domwindowopened") {
       aSubject.QueryInterface(Ci.nsIDOMWindow).addEventListener("load", this, false);
     } else if (aTopic == "domwindowclosed") {
@@ -667,7 +667,7 @@ BrowserWindowObserver.prototype = {
       }
     }
   },
-  handleEvent: function (aEvent) {
+  handleEvent: function(aEvent) {
     let aWindow = aEvent.currentTarget;
     aWindow.removeEventListener(aEvent.type, this, false);
 
@@ -677,16 +677,16 @@ BrowserWindowObserver.prototype = {
   }
 };
 
-function browserWindowStartup (aWindow) {
+function browserWindowStartup(aWindow) {
   aWindow.LullTheTabs = new LullTheTabs(aWindow.gBrowser);
 }
 
-function browserWindowShutdown (aWindow) {
+function browserWindowShutdown(aWindow) {
   aWindow.LullTheTabs.done(aWindow.gBrowser);
   delete aWindow.LullTheTabs;
 }
 
-function startup(data, reason) {
+function startup(aData, aReason) {
   let defaultBranch = Services.prefs.getDefaultBranch(branch);
   defaultBranch.setBoolPref("autoUnload", false);
   defaultBranch.setIntPref("unloadTimeout", 120);
@@ -720,8 +720,8 @@ function startup(data, reason) {
   }
 }
 
-function shutdown(data, reason) {
-  if (reason == APP_SHUTDOWN) return;
+function shutdown(aData, aReason) {
+  if (aReason == APP_SHUTDOWN) return;
 
   Services.ww.unregisterNotification(gWindowListener);
   gWindowListener = null;
@@ -738,5 +738,5 @@ function shutdown(data, reason) {
   }
 }
 
-function install(data, reason) {}
-function uninstall(data, reason) {}
+function install(aData, aReason) {}
+function uninstall(aData, aReason) {}
