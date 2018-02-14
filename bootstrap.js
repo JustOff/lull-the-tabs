@@ -202,6 +202,12 @@ function findClosestLoadedTab(aTab, aTabbrowser) {
     return null;
   }
 
+  // If leftIsNearest, then try previous sibling first
+  if (Services.prefs.getBoolPref(branch + "leftIsNearest") &&
+      aTab.previousSibling && !hasPendingAttribute(aTab.previousSibling)) {
+    return aTab.previousSibling;
+  }
+
   // The most obvious choice would be the owner tab, if it's active and is
   // part of the same tab group.
   if (aTab.owner
@@ -694,6 +700,7 @@ function startup(aData, aReason) {
   defaultBranch.setBoolPref("importBarTab", true);
   defaultBranch.setIntPref("selectOnUnload", 0);
   defaultBranch.setIntPref("selectOnClose", 1);
+  defaultBranch.setBoolPref("leftIsNearest", false);
 
   if (Services.prefs.getBoolPref(branch + "importBarTab")) {
     Services.prefs.setBoolPref(branch + "importBarTab", false);

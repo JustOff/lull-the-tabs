@@ -26,4 +26,6 @@
     <radio value="0" label="browser default"/>
     </radiogroup>
   </setting>
+  <setting type="bool" pref="extensions.lull-the-tabs.leftIsNearest" title="Consider the left adjacent tab as the nearest:">
+  </setting>
 </vbox>
