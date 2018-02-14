@@ -637,13 +637,22 @@ LullTheTabs.prototype = {
     }
   },
 
+  onClickButton: function(aEvent) {
+    if (aEvent.ctrlKey || aEvent.metaKey) {
+      let mrw = Services.wm.getMostRecentWindow("navigator:browser");
+      mrw.BrowserOpenAddonsMgr("addons://detail/lull-the-tabs@Off.JustOff/preferences");
+    } else {
+      this.unloadTab(this.tabBrowser.selectedTab);
+    }
+  },
+
   addButton: function() {
     let document = this.tabBrowser.ownerDocument;
     let button = document.createElement("image");
     button.setAttribute("id", "lull-the-tabs-button");
     button.setAttribute("class", "urlbar-icon");
     button.setAttribute("tooltiptext", "Unload this tab");
-    button.setAttribute("onclick", "gBrowser.LullTheTabs.unloadTab(gBrowser.selectedTab);");
+    button.setAttribute("onclick", "gBrowser.LullTheTabs.onClickButton(event);"); 
     let urlBarIcons = document.getElementById("urlbar-icons");
     urlBarIcons.insertBefore(button, urlBarIcons.firstChild);
     this.button = button;
