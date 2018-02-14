@@ -7,9 +7,9 @@
   And don't load them on browser start
   </setting>
   <setting type="radio" pref="extensions.lull-the-tabs.selectOnUnload" title="When unloading a tab, select:">
-  <radiogroup orient="horizontal" preference="">
-    <radio value="0" label="nearest loaded tab"/>
-    <radio value="1" label="previously selected tab"/>
+    <radiogroup orient="horizontal" preference="">
+      <radio value="0" label="nearest loaded tab"/>
+      <radio value="1" label="previously selected tab"/>
     </radiogroup>
   </setting>
   <setting type="bool" pref="extensions.lull-the-tabs.autoUnload" title="Automatically unload inactive tabs:">
@@ -20,10 +20,10 @@
   Use ; as a delimiter for multiple domains
   </setting>
   <setting type="radio" pref="extensions.lull-the-tabs.selectOnClose" title="When closing a tab, select:">
-  <radiogroup orient="horizontal" preference="">
-    <radio value="1" label="nearest loaded tab"/>
-    <radio value="2" label="previously selected tab"/>
-    <radio value="0" label="browser default"/>
+    <radiogroup orient="horizontal" preference="">
+      <radio value="1" label="nearest loaded tab"/>
+      <radio value="2" label="previously selected tab"/>
+      <radio value="0" label="browser default"/>
     </radiogroup>
   </setting>
   <setting type="bool" pref="extensions.lull-the-tabs.leftIsNearest" title="Consider the left adjacent tab as the nearest:">

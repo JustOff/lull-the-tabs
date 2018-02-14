@@ -496,7 +496,7 @@ LullTheTabs.prototype = {
     // If we are on the selected tab.
     if (tab.selected) {
       if (selectOnClose == 1) {
-        // Find the closest tab that isn't on the bar tab.
+        // Find the closest tab that isn't unloaded.
         let activeTab = findClosestLoadedTab(tab, this.tabBrowser);
         if (activeTab) {
           this.tabBrowser.selectedTab = activeTab;
@@ -527,7 +527,7 @@ LullTheTabs.prototype = {
     if (aTab.selected) {
       // If we are, then check selectOnUnload option.
       if (Services.prefs.getIntPref(branch + "selectOnUnload") == 0) {
-        // Find the closest tab that isn't on the bar tab.
+        // Find the closest tab that isn't unloaded.
         let activeTab = findClosestLoadedTab(aTab, tabbrowser);
         if (activeTab) {
           tabbrowser.selectedTab = activeTab;
