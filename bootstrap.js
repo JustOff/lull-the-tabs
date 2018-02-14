@@ -223,7 +223,9 @@ LullTheTabs.prototype = {
     this.prefBranch = Services.prefs.getBranch(branch);
     this.prefBranch.addObserver("", this, false);
 
-    this.startAllTimers();
+    if (Services.prefs.getBoolPref(branch + "autoUnload")) {
+      this.startAllTimers();
+    }
 
     if (Services.prefs.getBoolPref(branch + "showButton")) {
       this.addButton();
@@ -304,8 +306,10 @@ LullTheTabs.prototype = {
         }
         break;
       case 'unloadTimeout':
-        this.clearAllTimers();
-        this.startAllTimers();
+        if (Services.prefs.getBoolPref(branch + "autoUnload")) {
+          this.clearAllTimers();
+          this.startAllTimers();
+        }
         break;
       case 'showButton':
         if (Services.prefs.getBoolPref(branch + "showButton")) {
@@ -385,19 +389,17 @@ LullTheTabs.prototype = {
 
   onTabOpen: function(aEvent) {
     let tab = aEvent.originalTarget;
-    if (tab.selected) {
-      return;
+    if (!tab.selected && Services.prefs.getBoolPref(branch + "autoUnload")) {
+      this.startTimer(tab);
     }
-    this.startTimer(tab);
   },
 
   onTabSelect: function(aEvent) {
     this.previousTab = this.selectedTab;
     this.selectedTab = aEvent.originalTarget;
 
-    if (this.previousTab) {
-      // The previous tab may not be available because it has
-      // been closed.
+    // The previous tab may not be available because it has been closed.
+    if (this.previousTab && Services.prefs.getBoolPref(branch + "autoUnload")) {
       this.startTimer(this.previousTab);
     }
     this.clearTimer(this.selectedTab);
@@ -575,13 +577,9 @@ LullTheTabs.prototype = {
   },
 
   startTimer: function(aTab) {
-    if (!Services.prefs.getBoolPref(branch + "autoUnload")) {
-      return;
-    }
     if (hasPendingAttribute(aTab)) {
       return;
     }
-
     if (aTab._lullTheTabsTimer) {
       this.clearTimer(aTab);
     }
@@ -592,7 +590,7 @@ LullTheTabs.prototype = {
     aTab._lullTheTabsTimer = window.setTimeout(function() {
       // The timer will be removed automatically since
       // unloadTab() will close and replace the original tab.
-      self.tabBrowser.LullTheTabs.unloadTab(aTab);
+      self.unloadTab(aTab);
     }, timeout);
   },
 
