@@ -39,151 +39,6 @@ function isWhiteListed(aURI) {
   }
 }
 
-/*
- * A timer that keeps track of how long ago each tab was last visited.
- * If that time reaches a user-defined value, it unloads the tab in
- * question.  (The actual implementation works differently.  It uses
- * setTimeout, of course).
- */
-function LullTheTabsTimer(aTabBrowser) {
-  this.init(aTabBrowser);
-}
-LullTheTabsTimer.prototype = {
-
-  init: function(aTabBrowser) {
-    this.tabBrowser = aTabBrowser;
-    aTabBrowser.tabContainer.addEventListener('TabOpen', this, false);
-    aTabBrowser.tabContainer.addEventListener('TabSelect', this, false);
-    aTabBrowser.tabContainer.addEventListener('TabClose', this, false);
-
-    this.previousTab = null;
-    this.selectedTab = aTabBrowser.selectedTab;
-    this.startAllTimers();
-
-    this.prefBranch = Services.prefs.getBranch(branch);
-    this.prefBranch.addObserver("", this, false);
-  },
-
-  done: function(aTabBrowser) {
-    aTabBrowser.tabContainer.removeEventListener('TabOpen', this, false);
-    aTabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
-    aTabBrowser.tabContainer.removeEventListener('TabClose', this, false);
-
-    this.prefBranch.removeObserver("", this);
-    this.prefBranch = null;
-
-    this.clearAllTimers();
-    this.previousTab = null;
-    this.selectedTab = null;
-    this.tabBrowser = null;
-  },
-
-  observe: function(aSubject, aTopic, aData) {
-    if (aTopic != "nsPref:changed") return;
-    switch (aData) {
-      case 'autoUnload':
-        if (Services.prefs.getBoolPref(branch + "autoUnload")) {
-          this.startAllTimers();
-        } else {
-          this.clearAllTimers();
-        }
-        break;
-      case 'unloadTimeout':
-        this.clearAllTimers();
-        this.startAllTimers();
-        break;
-    }
-  },
-
-  handleEvent: function(aEvent) {
-    switch (aEvent.type) {
-    case 'TabOpen':
-      this.onTabOpen(aEvent);
-      return;
-    case 'TabSelect':
-      this.onTabSelect(aEvent);
-      return;
-    case 'TabClose':
-      this.onTabClose(aEvent);
-      return;
-    }
-  },
-
-  onTabOpen: function(aEvent) {
-    let tab = aEvent.originalTarget;
-    if (tab.selected) {
-      return;
-    }
-    this.startTimer(tab);
-  },
-
-  onTabClose: function(aEvent) {
-    this.clearTimer(aEvent.originalTarget);
-    if (aEvent.originalTarget == this.selectedTab) {
-      this.selectedTab = null;
-    };
-    if (aEvent.originalTarget == this.previousTab) {
-      this.previousTab = null;
-    };
-  },
-
-  onTabSelect: function(aEvent) {
-    this.previousTab = this.selectedTab;
-    this.selectedTab = aEvent.originalTarget;
-
-    if (this.previousTab) {
-      // The previous tab may not be available because it has
-      // been closed.
-      this.startTimer(this.previousTab);
-    }
-    this.clearTimer(this.selectedTab);
-  },
-
-  startTimer: function(aTab) {
-    if (!Services.prefs.getBoolPref(branch + "autoUnload")) {
-      return;
-    }
-    if (hasPendingAttribute(aTab)) {
-      return;
-    }
-
-    if (aTab._lullTheTabsTimer) {
-      this.clearTimer(aTab);
-    }
-    let timeout = Services.prefs.getIntPref(branch + "unloadTimeout") * 60 * 1000;
-    let window = aTab.ownerDocument.defaultView;
-    // Allow 'this' to leak into the inline function
-    let self = this;
-    aTab._lullTheTabsTimer = window.setTimeout(function() {
-      // The timer will be removed automatically since
-      // unloadTab() will close and replace the original tab.
-      self.tabBrowser.LullTheTabs.unloadTab(aTab);
-    }, timeout);
-  },
-
-  clearTimer: function(aTab) {
-    let window = aTab.ownerDocument.defaultView;
-    window.clearTimeout(aTab._lullTheTabsTimer);
-    aTab._lullTheTabsTimer = null;
-  },
-
-  startAllTimers: function() {
-    let visibleTabs = this.tabBrowser.visibleTabs;
-    for (let i = 0; i < visibleTabs.length; i++) {
-      if (!visibleTabs[i].selected) {
-        this.startTimer(visibleTabs[i]);
-      }
-    }
-  },
-
-  clearAllTimers: function() {
-    let visibleTabs = this.tabBrowser.visibleTabs;
-    for (let i = 0; i < visibleTabs.length; i++) {
-      this.clearTimer(visibleTabs[i]);
-    }
-  },
-};
-
 function hasPendingAttribute(aTab) {
   return aTab.getAttribute("pending") == "true";
 }
@@ -326,8 +181,6 @@ LullTheTabs.prototype = {
     aTabBrowser.LullTheTabs = this;
     let document = aTabBrowser.ownerDocument;
 
-    aTabBrowser.LullTheTabsTimer = new LullTheTabsTimer(aTabBrowser);
-
     let tabContextMenu = document.getElementById("tabContextMenu");
     let openTabInWindow = document.getElementById("context_openTabInWindow");
 
@@ -359,12 +212,19 @@ LullTheTabs.prototype = {
       "oncommand", "gBrowser.LullTheTabs.toggleWhitelist(gBrowser.mContextTab, event);");
     tabContextMenu.insertBefore(menuitem_neverUnload, openTabInWindow);
 
-    this.previousTab = null;
-    this.selectedTab = null;
+    tabContextMenu.addEventListener('popupshowing', this, false);
 
+    this.previousTab = null;
+    this.selectedTab = aTabBrowser.selectedTab;
+
+    aTabBrowser.tabContainer.addEventListener('TabOpen', this, false);
     aTabBrowser.tabContainer.addEventListener('TabSelect', this, false);
     aTabBrowser.tabContainer.addEventListener('TabClose', this, false);
-    tabContextMenu.addEventListener('popupshowing', this, false);
+
+    this.prefBranch = Services.prefs.getBranch(branch);
+    this.prefBranch.addObserver("", this, false);
+
+    this.startAllTimers();
   },
 
   done: function(aTabBrowser) {
@@ -384,17 +244,22 @@ LullTheTabs.prototype = {
       menuitem_neverUnload.parentNode.removeChild(menuitem_neverUnload);
     }
     let tabContextMenu = document.getElementById("tabContextMenu");
+
     tabContextMenu.removeEventListener('popupshowing', this, false);
 
+    aTabBrowser.tabContainer.removeEventListener('TabOpen', this, false);
     aTabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
     aTabBrowser.tabContainer.removeEventListener('TabClose', this, false);
+
+    this.prefBranch.removeObserver("", this);
+    this.prefBranch = null;
+
+    this.clearAllTimers();
 
     this.previousTab = null;
     this.selectedTab = null;
 
-    aTabBrowser.LullTheTabsTimer.done(aTabBrowser);
 
-    delete aTabBrowser.LullTheTabsTimer;
     delete aTabBrowser.LullTheTabs;
     this.tabBrowser = null;
   },
@@ -404,12 +269,32 @@ LullTheTabs.prototype = {
       case 'popupshowing':
         this.onPopupShowing(aEvent);
         return;
+      case 'TabOpen':
+        this.onTabOpen(aEvent);
+        return;
       case 'TabSelect':
         this.onTabSelect(aEvent);
         return;
       case 'TabClose':
         this.onTabClose(aEvent);
         return;
+    }
+  },
+
+  observe: function(aSubject, aTopic, aData) {
+    if (aTopic != "nsPref:changed") return;
+    switch (aData) {
+      case 'autoUnload':
+        if (Services.prefs.getBoolPref(branch + "autoUnload")) {
+          this.startAllTimers();
+        } else {
+          this.clearAllTimers();
+        }
+        break;
+      case 'unloadTimeout':
+        this.clearAllTimers();
+        this.startAllTimers();
+        break;
     }
   },
 
@@ -479,12 +364,37 @@ LullTheTabs.prototype = {
     menuitem_neverUnload.removeAttribute("hidden");
   },
 
+  onTabOpen: function(aEvent) {
+    let tab = aEvent.originalTarget;
+    if (tab.selected) {
+      return;
+    }
+    this.startTimer(tab);
+  },
+
   onTabSelect: function(aEvent) {
     this.previousTab = this.selectedTab;
     this.selectedTab = aEvent.originalTarget;
+
+    if (this.previousTab) {
+      // The previous tab may not be available because it has
+      // been closed.
+      this.startTimer(this.previousTab);
+    }
+    this.clearTimer(this.selectedTab);
   },
 
   onTabClose: function(aEvent) {
+    let tab = aEvent.originalTarget;
+    this.clearTimer(tab);
+
+    if (tab == this.selectedTab) {
+      this.selectedTab = null;
+    };
+    if (tab == this.previousTab) {
+      this.previousTab = null;
+    };
+
     // Check selectOnClose option.
     let selectOnClose = Services.prefs.getIntPref(branch + "selectOnClose");
     if (selectOnClose == 0) {
@@ -492,7 +402,6 @@ LullTheTabs.prototype = {
       return;
     }
 
-    let tab = aEvent.originalTarget;
     // If we are on the selected tab.
     if (tab.selected) {
       if (selectOnClose == 1) {
@@ -636,7 +545,51 @@ LullTheTabs.prototype = {
     str.data = whitelist.join(";");
     Services.prefs.setComplexValue(branch + "exceptionList", Ci.nsISupportsString, str);
     domRegex = null;
-  }
+  },
+
+  startTimer: function(aTab) {
+    if (!Services.prefs.getBoolPref(branch + "autoUnload")) {
+      return;
+    }
+    if (hasPendingAttribute(aTab)) {
+      return;
+    }
+
+    if (aTab._lullTheTabsTimer) {
+      this.clearTimer(aTab);
+    }
+    let timeout = Services.prefs.getIntPref(branch + "unloadTimeout") * 60 * 1000;
+    let window = aTab.ownerDocument.defaultView;
+    // Allow 'this' to leak into the inline function
+    let self = this;
+    aTab._lullTheTabsTimer = window.setTimeout(function() {
+      // The timer will be removed automatically since
+      // unloadTab() will close and replace the original tab.
+      self.tabBrowser.LullTheTabs.unloadTab(aTab);
+    }, timeout);
+  },
+
+  clearTimer: function(aTab) {
+    let window = aTab.ownerDocument.defaultView;
+    window.clearTimeout(aTab._lullTheTabsTimer);
+    aTab._lullTheTabsTimer = null;
+  },
+
+  startAllTimers: function() {
+    let visibleTabs = this.tabBrowser.visibleTabs;
+    for (let i = 0; i < visibleTabs.length; i++) {
+      if (!visibleTabs[i].selected) {
+        this.startTimer(visibleTabs[i]);
+      }
+    }
+  },
+
+  clearAllTimers: function() {
+    let visibleTabs = this.tabBrowser.visibleTabs;
+    for (let i = 0; i < visibleTabs.length; i++) {
+      this.clearTimer(visibleTabs[i]);
+    }
+  },
 };
 
 let globalPrefsWatcher = {
