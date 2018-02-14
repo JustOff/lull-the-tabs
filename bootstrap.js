@@ -284,6 +284,12 @@ LullTheTabs.prototype = {
       case 'TabClose':
         this.onTabClose(aEvent);
         return;
+      case 'TabPinned':
+        this.onTabPinned(aEvent);
+        return;
+      case 'TabUnpinned':
+        this.onTabPinned(aEvent);
+        return;
     }
   },
 
@@ -545,6 +551,11 @@ LullTheTabs.prototype = {
           break;
         }
       }
+      if (this.button && aTab == this.tabBrowser.selectedTab && 
+          (this.tabBrowser.selectedTab.getAttribute("pinned") != "true" ||
+           Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF))) {
+        this.button.style.display = "block";
+      }
     } else {
       if (e.ctrlKey) {
         try {
@@ -552,6 +563,9 @@ LullTheTabs.prototype = {
         } catch (e) {}
       }
       whitelist.push(host);
+      if (this.button && aTab == this.tabBrowser.selectedTab) {
+        this.button.style.display = "none";
+      }
     }
 
     let str = Cc["@mozilla.org/supports-string;1"].createInstance(Ci.nsISupportsString);
@@ -604,6 +618,27 @@ LullTheTabs.prototype = {
     }
   },
 
+  updateButton: function(aURI) {
+    if (!isWhiteListed(aURI) &&
+        (this.tabBrowser.selectedTab.getAttribute("pinned") != "true" || 
+         Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF))) {
+      this.button.style.display = "block";
+    } else {
+      this.button.style.display = "none";
+    }
+  },
+
+  onLocationChange: function(aWebProgress, aRequest, aLocation, aFlag) {
+    this.updateButton(aLocation);
+  },
+
+  onTabPinned: function(aEvent) {
+    let tab = aEvent.originalTarget;
+    if (tab == this.tabBrowser.selectedTab) {
+      this.updateButton(tab.linkedBrowser.currentURI);
+    }
+  },
+
   addButton: function() {
     let document = this.tabBrowser.ownerDocument;
     let button = document.createElement("image");
@@ -613,12 +648,18 @@ LullTheTabs.prototype = {
     button.setAttribute("onclick", "gBrowser.LullTheTabs.unloadTab(gBrowser.selectedTab);");
     let urlBarIcons = document.getElementById("urlbar-icons");
     urlBarIcons.insertBefore(button, urlBarIcons.firstChild);
+    this.button = button;
+    this.tabBrowser.addProgressListener(this);
+    this.tabBrowser.tabContainer.addEventListener('TabPinned', this, false);
+    this.tabBrowser.tabContainer.addEventListener('TabUnpinned', this, false);
   },
 
   removeButton: function() {
-    let document = this.tabBrowser.ownerDocument;
-    let button = document.getElementById("lull-the-tabs-button");
-    button.parentNode.removeChild(button);
+    this.tabBrowser.removeProgressListener(this);
+    this.tabBrowser.tabContainer.removeEventListener('TabPinned', this, false);
+    this.tabBrowser.tabContainer.removeEventListener('TabUnpinned', this, false);
+    this.button.parentNode.removeChild(this.button);
+    this.button = null;
   },
 };
 
