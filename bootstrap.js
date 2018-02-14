@@ -17,8 +17,7 @@ XPCOMUtils.defineLazyServiceGetter(this, "IDNService",
                                    "nsIIDNService");
 
 let styleSheetService = Cc["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
-let styleSheetURI = Services.io.newURI("data:text/css," +
-  encodeURIComponent(".tabbrowser-tab[pending=true],menuitem.alltabs-item[pending=true]{opacity:.5;}"), null, null);
+let styleSheetURI = Services.io.newURI("chrome://lull-the-tabs/skin/style.css", null, null);
 
 let domRegex = null, gWindowListener;
 
@@ -225,6 +224,10 @@ LullTheTabs.prototype = {
     this.prefBranch.addObserver("", this, false);
 
     this.startAllTimers();
+
+    if (Services.prefs.getBoolPref(branch + "showButton")) {
+      this.addButton();
+    }
   },
 
   done: function(aTabBrowser) {
@@ -259,6 +262,9 @@ LullTheTabs.prototype = {
     this.previousTab = null;
     this.selectedTab = null;
 
+    if (Services.prefs.getBoolPref(branch + "showButton")) {
+      this.removeButton();
+    }
 
     delete aTabBrowser.LullTheTabs;
     this.tabBrowser = null;
@@ -294,6 +300,13 @@ LullTheTabs.prototype = {
       case 'unloadTimeout':
         this.clearAllTimers();
         this.startAllTimers();
+        break;
+      case 'showButton':
+        if (Services.prefs.getBoolPref(branch + "showButton")) {
+          this.addButton();
+        } else {
+          this.removeButton();
+        }
         break;
     }
   },
@@ -590,6 +603,23 @@ LullTheTabs.prototype = {
       this.clearTimer(visibleTabs[i]);
     }
   },
+
+  addButton: function() {
+    let document = this.tabBrowser.ownerDocument;
+    let button = document.createElement("image");
+    button.setAttribute("id", "lull-the-tabs-button");
+    button.setAttribute("class", "urlbar-icon");
+    button.setAttribute("tooltiptext", "Unload this tab");
+    button.setAttribute("onclick", "gBrowser.LullTheTabs.unloadTab(gBrowser.selectedTab);");
+    let urlBarIcons = document.getElementById("urlbar-icons");
+    urlBarIcons.insertBefore(button, urlBarIcons.firstChild);
+  },
+
+  removeButton: function() {
+    let document = this.tabBrowser.ownerDocument;
+    let button = document.getElementById("lull-the-tabs-button");
+    button.parentNode.removeChild(button);
+  },
 };
 
 let globalPrefsWatcher = {
@@ -654,6 +684,7 @@ function startup(aData, aReason) {
   defaultBranch.setIntPref("selectOnUnload", 0);
   defaultBranch.setIntPref("selectOnClose", 1);
   defaultBranch.setBoolPref("leftIsNearest", false);
+  defaultBranch.setBoolPref("showButton", true);
 
   if (Services.prefs.getBoolPref(branch + "importBarTab")) {
     Services.prefs.setBoolPref(branch + "importBarTab", false);
