@@ -5,6 +5,7 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 const branch = "extensions.lull-the-tabs.";
 const ON_DEMAND_PREF = "browser.sessionstore.restore_on_demand";
 const PINNED_ON_DEMAND_PREF = "browser.sessionstore.restore_pinned_tabs_on_demand";
+const LOAD_IN_BACKGROUND = "browser.tabs.loadInBackground";
 
 XPCOMUtils.defineLazyServiceGetter(this, "gSessionStore",
                                    "@mozilla.org/browser/sessionstore;1",
@@ -176,6 +177,7 @@ function LullTheTabs(aWindow) {
 LullTheTabs.prototype = {
 
   init: function(aWindow) {
+    this.browserWindow = aWindow;
     this.tabBrowser = aWindow.gBrowser;
 
     let document = this.tabBrowser.ownerDocument;
@@ -230,6 +232,10 @@ LullTheTabs.prototype = {
     if (Services.prefs.getBoolPref(branch + "showButton")) {
       this.addButton();
     }
+
+    if (Services.prefs.getBoolPref(branch + "pauseBackgroundTabs")) {
+      this.hookOpenInBackground();
+    }
   },
 
   done: function() {
@@ -268,7 +274,12 @@ LullTheTabs.prototype = {
       this.removeButton();
     }
 
+    if (Services.prefs.getBoolPref(branch + "pauseBackgroundTabs")) {
+      this.unhookOpenInBackground();
+    }
+
     this.tabBrowser = null;
+    this.browserWindow = null;
   },
 
   handleEvent: function(aEvent) {
@@ -315,6 +326,13 @@ LullTheTabs.prototype = {
           this.addButton();
         } else {
           this.removeButton();
+        }
+        break;
+      case 'pauseBackgroundTabs':
+        if (Services.prefs.getBoolPref(branch + "pauseBackgroundTabs")) {
+          this.hookOpenInBackground();
+        } else {
+          this.unhookOpenInBackground();
         }
         break;
     }
@@ -667,6 +685,68 @@ LullTheTabs.prototype = {
     this.button.parentNode.removeChild(this.button);
     this.button = null;
   },
+
+  openInBackground: function(aWindow, aHref, aTitle, aReferrer) {
+    let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
+    gSessionStore.setTabState(newtab, JSON.stringify({"entries": [{"url": aHref, "title": aTitle, "referrer": aReferrer}]}));
+  },
+
+  contextNewTab: function(aWindow, aEvent) {
+    let gContextMenu = aWindow.gContextMenu;
+    if (Services.prefs.getBoolPref(LOAD_IN_BACKGROUND)) {
+      aWindow.urlSecurityCheck(gContextMenu.linkURL, aEvent.target.ownerDocument.nodePrincipal);
+      this.openInBackground(aWindow, gContextMenu.linkURL, 
+                            gContextMenu.link ? gContextMenu.link.textContent.trim() : gContextMenu.linkURL,
+                            aWindow.content.location.href);
+    } else {
+      gContextMenu.openLinkInTab(aEvent);
+    }
+  },
+
+  hookOpenInBackground: function() {
+    let openlinkintab = this.tabBrowser.ownerDocument.getElementById("context-openlinkintab");
+    this.bgCommand = openlinkintab.getAttribute("oncommand");
+    openlinkintab.setAttribute("oncommand", "gBrowser.LullTheTabs.contextNewTab(window, event);")
+
+    let win = this.browserWindow;
+    let openInBackground = this.openInBackground;
+    win.original_handleLinkClick = win.handleLinkClick;
+    win.handleLinkClick = function(event, href, linkNode){
+      // Based on code from /browser/base/content/browser.js from Pale Moon 27.x 
+      if (event.button == 2) // right click
+        return false;
+
+      let where = win.whereToOpenLink(event);
+      if (where == "current")
+        return false;
+
+      let doc = event.target.ownerDocument;
+
+      if (where == "save") {
+        win.saveURL(href, linkNode ? win.gatherTextUnder(linkNode) : "", null, true,
+                    true, doc.documentURIObject, doc);
+        event.preventDefault();
+        return true;
+      }
+
+      win.urlSecurityCheck(href, doc.nodePrincipal);
+      if (where == "tab" && Services.prefs.getBoolPref(LOAD_IN_BACKGROUND)) {
+        openInBackground(win, href, linkNode ? win.gatherTextUnder(linkNode) : href, doc.documentURIObject.spec);
+      } else {
+        win.openLinkIn(href, where, { referrerURI: doc.documentURIObject, charset: doc.characterSet });
+      }
+      event.preventDefault();
+      return true;
+    };
+  },
+
+  unhookOpenInBackground: function() {
+    this.tabBrowser.ownerDocument.getElementById("context-openlinkintab").setAttribute("oncommand", this.bgCommand);
+    this.bgCommand = null;
+
+    this.browserWindow.handleLinkClick = this.browserWindow.original_handleLinkClick;
+    delete this.browserWindow.original_handleLinkClick;
+  },
 };
 
 let globalPrefsWatcher = {
@@ -732,6 +812,7 @@ function startup(aData, aReason) {
   defaultBranch.setIntPref("selectOnClose", 1);
   defaultBranch.setBoolPref("leftIsNearest", false);
   defaultBranch.setBoolPref("showButton", true);
+  defaultBranch.setBoolPref("pauseBackgroundTabs", false);
 
   if (Services.prefs.getBoolPref(branch + "importBarTab")) {
     Services.prefs.setBoolPref(branch + "importBarTab", false);
@@ -748,6 +829,10 @@ function startup(aData, aReason) {
       if (!Services.prefs.getBoolPref("extensions.bartab.findClosestLoadedTab")) {
         Services.prefs.setIntPref(branch + "selectOnClose", 0);
       }
+    } catch (e) {}
+    try {
+      Services.prefs.setBoolPref(branch + "pauseBackgroundTabs", 
+                                 Services.prefs.getIntPref("extensions.bartab.loadBackgroundTabs") == 1);
     } catch (e) {}
   }
 
