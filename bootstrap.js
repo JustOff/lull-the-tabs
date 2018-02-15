@@ -170,15 +170,15 @@ function findClosestLoadedTab(aTab, aTabbrowser) {
  * This handler attaches to the tabbrowser.  It listens to various tab
  * related events.
  */
-function LullTheTabs(aTabBrowser) {
-  this.init(aTabBrowser);
+function LullTheTabs(aWindow) {
+  this.init(aWindow);
 }
 LullTheTabs.prototype = {
 
-  init: function(aTabBrowser) {
-    this.tabBrowser = aTabBrowser;
-    aTabBrowser.LullTheTabs = this;
-    let document = aTabBrowser.ownerDocument;
+  init: function(aWindow) {
+    this.tabBrowser = aWindow.gBrowser;
+
+    let document = this.tabBrowser.ownerDocument;
 
     let tabContextMenu = document.getElementById("tabContextMenu");
     let openTabInWindow = document.getElementById("context_openTabInWindow");
@@ -214,11 +214,11 @@ LullTheTabs.prototype = {
     tabContextMenu.addEventListener('popupshowing', this, false);
 
     this.previousTab = null;
-    this.selectedTab = aTabBrowser.selectedTab;
+    this.selectedTab = this.tabBrowser.selectedTab;
 
-    aTabBrowser.tabContainer.addEventListener('TabOpen', this, false);
-    aTabBrowser.tabContainer.addEventListener('TabSelect', this, false);
-    aTabBrowser.tabContainer.addEventListener('TabClose', this, false);
+    this.tabBrowser.tabContainer.addEventListener('TabOpen', this, false);
+    this.tabBrowser.tabContainer.addEventListener('TabSelect', this, false);
+    this.tabBrowser.tabContainer.addEventListener('TabClose', this, false);
 
     this.prefBranch = Services.prefs.getBranch(branch);
     this.prefBranch.addObserver("", this, false);
@@ -232,8 +232,8 @@ LullTheTabs.prototype = {
     }
   },
 
-  done: function(aTabBrowser) {
-    let document = aTabBrowser.ownerDocument;
+  done: function() {
+    let document = this.tabBrowser.ownerDocument;
 
     // remove tab context menu related stuff
     let menuitem_unloadTab = document.getElementById("lull-the-tabs-unload");
@@ -252,9 +252,9 @@ LullTheTabs.prototype = {
 
     tabContextMenu.removeEventListener('popupshowing', this, false);
 
-    aTabBrowser.tabContainer.removeEventListener('TabOpen', this, false);
-    aTabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
-    aTabBrowser.tabContainer.removeEventListener('TabClose', this, false);
+    this.tabBrowser.tabContainer.removeEventListener('TabOpen', this, false);
+    this.tabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
+    this.tabBrowser.tabContainer.removeEventListener('TabClose', this, false);
 
     this.prefBranch.removeObserver("", this);
     this.prefBranch = null;
@@ -268,7 +268,6 @@ LullTheTabs.prototype = {
       this.removeButton();
     }
 
-    delete aTabBrowser.LullTheTabs;
     this.tabBrowser = null;
   },
 
@@ -715,12 +714,12 @@ BrowserWindowObserver.prototype = {
 };
 
 function browserWindowStartup(aWindow) {
-  aWindow.LullTheTabs = new LullTheTabs(aWindow.gBrowser);
+  aWindow.gBrowser.LullTheTabs = new LullTheTabs(aWindow);
 }
 
 function browserWindowShutdown(aWindow) {
-  aWindow.LullTheTabs.done(aWindow.gBrowser);
-  delete aWindow.LullTheTabs;
+  aWindow.gBrowser.LullTheTabs.done();
+  delete aWindow.gBrowser.LullTheTabs;
 }
 
 function startup(aData, aReason) {
