@@ -688,7 +688,9 @@ LullTheTabs.prototype = {
 
   openInBackground: function(aWindow, aHref, aTitle, aReferrer) {
     let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
-    gSessionStore.setTabState(newtab, JSON.stringify({"entries": [{"url": aHref, "title": aTitle, "referrer": aReferrer}]}));
+    gSessionStore.setTabState(newtab, JSON.stringify({"entries": [{"url": aHref,
+                                                                   "title": aTitle + ' :: ' + aHref,
+                                                                   "referrer": aReferrer}]}));
   },
 
   contextNewTab: function(aWindow, aEvent) {
