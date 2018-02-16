@@ -417,6 +417,7 @@ LullTheTabs.prototype = {
   onTabSelect: function(aEvent) {
     this.previousTab = this.selectedTab;
     this.selectedTab = aEvent.originalTarget;
+    this.selectedTab.removeAttribute("bgpending");
 
     // The previous tab may not be available because it has been closed.
     if (this.previousTab && Services.prefs.getBoolPref(branch + "autoUnload")) {
@@ -702,6 +703,7 @@ LullTheTabs.prototype = {
       }
       let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
       gSessionStore.setTabState(newtab, JSON.stringify(session));
+      newtab.setAttribute("bgpending", true);
       if (Services.prefs.getBoolPref(branch + "openNextToCurrent")) {
         aWindow.gBrowser.moveTabTo(newtab, aWindow.gBrowser.selectedTab._tPos + 1);
       }

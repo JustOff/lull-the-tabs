@@ -4,7 +4,7 @@
   menuitem.alltabs-item[pending=true] {
     opacity: .5;
   }
-  
+
   #lull-the-tabs-button {
     list-style-image: url("chrome://lull-the-tabs/skin/icon.png");
     -moz-image-region: rect(0px 16px 16px 0px);
@@ -12,5 +12,10 @@
 
   #lull-the-tabs-button:hover {
     -moz-image-region: rect(0px 32px 16px 16px);
+  }
+
+  .tabbrowser-tab[bgpending] .tab-label {
+    text-decoration: underline;
+    text-decoration-style: dashed;
   }
 }
