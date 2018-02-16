@@ -19,6 +19,9 @@ XPCOMUtils.defineLazyServiceGetter(this, "IDNService",
 XPCOMUtils.defineLazyServiceGetter(this, "gFaviconService",
                                    "@mozilla.org/browser/favicon-service;1",
                                    "nsIFaviconService");
+XPCOMUtils.defineLazyServiceGetter(this, "gHistoryService",
+                                   "@mozilla.org/browser/nav-history-service;1",
+                                   "nsINavHistoryService");
 
 let styleSheetService = Cc["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
 let styleSheetURI = Services.io.newURI("chrome://lull-the-tabs/skin/style.css", null, null);
@@ -700,6 +703,23 @@ LullTheTabs.prototype = {
     asyncFavicons.getFaviconURLForPage(Services.io.newURI(sHref[0] + "//" + sHref[1], null, null), function (aURI) {
       if (aURI && aURI.spec) {
         session["image"] = aURI.spec;
+      } else {
+        let hist = gHistoryService;
+        let hopt = hist.getNewQueryOptions();
+        hopt.queryType = Ci.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY;
+        hopt.maxResults = 1;
+        let hquery = hist.getNewQuery();
+        hquery.uri = Services.io.newURI(sHref[0] + "//" + sHref[1], null, null);
+        hquery.uriIsPrefix = true;
+        let hresult = hist.executeQuery(hquery, hopt);
+        hresult.root.containerOpen = true;
+        if (hresult.root.childCount) {
+          let info = hresult.root.getChild(0);
+          if (info.icon) {
+            session["image"] = info.icon;
+          }
+        }
+        hresult.root.containerOpen = false;
       }
       let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
       gSessionStore.setTabState(newtab, JSON.stringify(session));
