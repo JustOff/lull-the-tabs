@@ -694,8 +694,9 @@ LullTheTabs.prototype = {
     if (aTitle != "") {
       session["entries"][0]["title"] = aTitle + ' :: ' + aHref;
     }
-    let AsyncFavicons = gFaviconService.QueryInterface(Ci.mozIAsyncFavicons);
-    AsyncFavicons.getFaviconURLForPage(Services.io.newURI(aHref, null, null), function (aURI) {
+    let asyncFavicons = gFaviconService.QueryInterface(Ci.mozIAsyncFavicons);
+    let sHref = aHref.split(/\/+/g);
+    asyncFavicons.getFaviconURLForPage(Services.io.newURI(sHref[0] + "//" + sHref[1], null, null), function (aURI) {
       if (aURI && aURI.spec) {
         session["image"] = aURI.spec;
       } else {
