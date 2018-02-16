@@ -687,7 +687,8 @@ LullTheTabs.prototype = {
   },
 
   openInBackground: function(aWindow, aHref, aTitle, aReferrer) {
-    let session = {"entries": [{"url": aHref, "referrer": aReferrer}]};
+    let session = {"entries": [{"url": aHref, "referrer": aReferrer}],
+                   "image": "chrome://lull-the-tabs/skin/favicon.png"};
     if (aTitle != "") {
       session["entries"][0]["title"] = aTitle + ' :: ' + aHref;
     }
