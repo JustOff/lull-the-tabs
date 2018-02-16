@@ -699,8 +699,6 @@ LullTheTabs.prototype = {
     asyncFavicons.getFaviconURLForPage(Services.io.newURI(sHref[0] + "//" + sHref[1], null, null), function (aURI) {
       if (aURI && aURI.spec) {
         session["image"] = aURI.spec;
-      } else {
-        session["image"] = "chrome://lull-the-tabs/skin/favicon.png";
       }
       let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
       gSessionStore.setTabState(newtab, JSON.stringify(session));
