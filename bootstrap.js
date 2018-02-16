@@ -16,6 +16,9 @@ XPCOMUtils.defineLazyServiceGetter(this, "eTLDService",
 XPCOMUtils.defineLazyServiceGetter(this, "IDNService",
                                    "@mozilla.org/network/idn-service;1",
                                    "nsIIDNService");
+XPCOMUtils.defineLazyServiceGetter(this, "gFaviconService",
+                                   "@mozilla.org/browser/favicon-service;1",
+                                   "nsIFaviconService");
 
 let styleSheetService = Cc["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
 let styleSheetURI = Services.io.newURI("chrome://lull-the-tabs/skin/style.css", null, null);
@@ -687,16 +690,23 @@ LullTheTabs.prototype = {
   },
 
   openInBackground: function(aWindow, aHref, aTitle, aReferrer) {
-    let session = {"entries": [{"url": aHref, "referrer": aReferrer}],
-                   "image": "chrome://lull-the-tabs/skin/favicon.png"};
+    let session = {"entries": [{"url": aHref, "referrer": aReferrer}]};
     if (aTitle != "") {
       session["entries"][0]["title"] = aTitle + ' :: ' + aHref;
     }
-    let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
-    gSessionStore.setTabState(newtab, JSON.stringify(session));
-    if (Services.prefs.getBoolPref(branch + "openNextToCurrent")) {
-      aWindow.gBrowser.moveTabTo(newtab, aWindow.gBrowser.selectedTab._tPos + 1);
-    }
+    let AsyncFavicons = gFaviconService.QueryInterface(Ci.mozIAsyncFavicons);
+    AsyncFavicons.getFaviconURLForPage(Services.io.newURI(aHref, null, null), function (aURI) {
+      if (aURI && aURI.spec) {
+        session["image"] = aURI.spec;
+      } else {
+        session["image"] = "chrome://lull-the-tabs/skin/favicon.png";
+      }
+      let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
+      gSessionStore.setTabState(newtab, JSON.stringify(session));
+      if (Services.prefs.getBoolPref(branch + "openNextToCurrent")) {
+        aWindow.gBrowser.moveTabTo(newtab, aWindow.gBrowser.selectedTab._tPos + 1);
+      }
+    });
   },
 
   contextNewTab: function(aWindow, aEvent) {
