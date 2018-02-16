@@ -694,6 +694,9 @@ LullTheTabs.prototype = {
     }
     let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
     gSessionStore.setTabState(newtab, JSON.stringify(session));
+    if (Services.prefs.getBoolPref(branch + "openNextToCurrent")) {
+      aWindow.gBrowser.moveTabTo(newtab, aWindow.gBrowser.selectedTab._tPos + 1);
+    }
   },
 
   contextNewTab: function(aWindow, aEvent) {
@@ -818,6 +821,7 @@ function startup(aData, aReason) {
   defaultBranch.setBoolPref("leftIsNearest", false);
   defaultBranch.setBoolPref("showButton", true);
   defaultBranch.setBoolPref("pauseBackgroundTabs", false);
+  defaultBranch.setBoolPref("openNextToCurrent", false);
 
   if (Services.prefs.getBoolPref(branch + "importBarTab")) {
     Services.prefs.setBoolPref(branch + "importBarTab", false);

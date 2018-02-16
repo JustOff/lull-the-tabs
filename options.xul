@@ -16,6 +16,9 @@
   </setting>
   <setting type="bool" pref="extensions.lull-the-tabs.pauseBackgroundTabs" title="Don't load tabs that open in the background:">
   </setting>
+  <setting type="bool" pref="extensions.lull-the-tabs.openNextToCurrent" title="Open background tabs next to the current one:">
+  Applies when the option above is activated
+  </setting>
   <setting type="bool" pref="extensions.lull-the-tabs.autoUnload" title="Automatically unload inactive tabs:">
   </setting>
   <setting type="integer" pref="extensions.lull-the-tabs.unloadTimeout" title="Unload timeout, in minutes:">
