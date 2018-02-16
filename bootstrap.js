@@ -725,8 +725,14 @@ LullTheTabs.prototype = {
         return false;
 
       let where = win.whereToOpenLink(event);
-      if (where == "current")
-        return false;
+      if (where == "current") {
+        // Respect Tab Mix Plus "protected" attribute
+        if (win.gBrowser.selectedTab.hasAttribute("protected")) {
+          where = "tab";
+        } else {
+          return false;
+        }
+      }
 
       let doc = event.target.ownerDocument;
 
