@@ -724,17 +724,18 @@ LullTheTabs.prototype = {
       if (event.button == 2) // right click
         return false;
 
+      let doc = event.target.ownerDocument;
+
       let where = win.whereToOpenLink(event);
       if (where == "current") {
         // Respect Tab Mix Plus "protected" attribute
-        if (win.gBrowser.selectedTab.hasAttribute("protected")) {
+        if (win.gBrowser.selectedTab.hasAttribute("protected") &&
+            href.split('#')[0] != doc.documentURIObject.specIgnoringRef) {
           where = "tab";
         } else {
           return false;
         }
       }
-
-      let doc = event.target.ownerDocument;
 
       if (where == "save") {
         win.saveURL(href, linkNode ? win.gatherTextUnder(linkNode) : "", null, true,
