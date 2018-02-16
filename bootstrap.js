@@ -687,10 +687,12 @@ LullTheTabs.prototype = {
   },
 
   openInBackground: function(aWindow, aHref, aTitle, aReferrer) {
+    let session = {"entries": [{"url": aHref, "referrer": aReferrer}]};
+    if (aTitle != "") {
+      session["entries"][0]["title"] = aTitle + ' :: ' + aHref;
+    }
     let newtab = aWindow.gBrowser.addTab(null, {skipAnimation: true});
-    gSessionStore.setTabState(newtab, JSON.stringify({"entries": [{"url": aHref,
-                                                                   "title": aTitle + ' :: ' + aHref,
-                                                                   "referrer": aReferrer}]}));
+    gSessionStore.setTabState(newtab, JSON.stringify(session));
   },
 
   contextNewTab: function(aWindow, aEvent) {
@@ -698,7 +700,7 @@ LullTheTabs.prototype = {
     if (Services.prefs.getBoolPref(LOAD_IN_BACKGROUND)) {
       aWindow.urlSecurityCheck(gContextMenu.linkURL, aEvent.target.ownerDocument.nodePrincipal);
       this.openInBackground(aWindow, gContextMenu.linkURL, 
-                            gContextMenu.link ? gContextMenu.link.textContent.trim() : gContextMenu.linkURL,
+                            gContextMenu.link ? gContextMenu.link.textContent.trim() : "",
                             aWindow.content.location.href);
     } else {
       gContextMenu.openLinkInTab(aEvent);
@@ -733,7 +735,7 @@ LullTheTabs.prototype = {
 
       win.urlSecurityCheck(href, doc.nodePrincipal);
       if (where == "tab" && Services.prefs.getBoolPref(LOAD_IN_BACKGROUND)) {
-        openInBackground(win, href, linkNode ? win.gatherTextUnder(linkNode) : href, doc.documentURIObject.spec);
+        openInBackground(win, href, linkNode ? win.gatherTextUnder(linkNode).trim() : "", doc.documentURIObject.spec);
       } else {
         win.openLinkIn(href, where, { referrerURI: doc.documentURIObject, charset: doc.characterSet });
       }
