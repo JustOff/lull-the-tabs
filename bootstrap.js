@@ -734,7 +734,7 @@ LullTheTabs.prototype = {
         title: aTitle,
         visits: [{
           transitionType: PlacesUtils.history.TRANSITION_LINK,
-          visitDate: Date.now()
+          visitDate: Date.now() * 1000
         }],
       }];
       PlacesUtils.asyncHistory.updatePlaces(places);
