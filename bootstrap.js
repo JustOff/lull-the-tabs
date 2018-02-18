@@ -734,7 +734,8 @@ LullTheTabs.prototype = {
       if (Services.prefs.getBoolPref(branch + "openNextToCurrent")) {
         aWindow.gBrowser.moveTabTo(newtab, aWindow.gBrowser.selectedTab._tPos + 1);
       }
-      if (PrivateBrowsingUtils.isWindowPrivate(aWindow)) {
+      if (PrivateBrowsingUtils.isWindowPrivate(aWindow) || 
+          aWindow.gBrowser.selectedTab.getAttribute("privateTab-isPrivate")) {
         return;
       }
       let places = [{
