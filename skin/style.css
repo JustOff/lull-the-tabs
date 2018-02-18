@@ -15,7 +15,6 @@
   }
 
   .tabbrowser-tab[bgpending] .tab-label {
-    text-decoration: underline;
-    text-decoration-style: wavy;
+    text-decoration: underline wavy;
   }
 }
