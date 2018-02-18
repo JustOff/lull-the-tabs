@@ -24,6 +24,8 @@ XPCOMUtils.defineLazyServiceGetter(this, "gHistoryService",
                                    "nsINavHistoryService");
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
                                   "resource://gre/modules/PlacesUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "PrivateBrowsingUtils",
+                                  "resource://gre/modules/PrivateBrowsingUtils.jsm");
 
 let styleSheetService = Cc["@mozilla.org/content/style-sheet-service;1"].getService(Ci.nsIStyleSheetService);
 let styleSheetURI = Services.io.newURI("chrome://lull-the-tabs/skin/style.css", null, null);
@@ -728,6 +730,9 @@ LullTheTabs.prototype = {
       newtab.setAttribute("bgpending", true);
       if (Services.prefs.getBoolPref(branch + "openNextToCurrent")) {
         aWindow.gBrowser.moveTabTo(newtab, aWindow.gBrowser.selectedTab._tPos + 1);
+      }
+      if (PrivateBrowsingUtils.isWindowPrivate(aWindow)) {
+        return;
       }
       let places = [{
         uri: Services.io.newURI(aHref, null, null),
