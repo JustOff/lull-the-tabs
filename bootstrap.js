@@ -189,6 +189,7 @@ LullTheTabs.prototype = {
   init: function(aWindow) {
     this.browserWindow = aWindow;
     this.tabBrowser = aWindow.gBrowser;
+    this.smoothScroll = this.tabBrowser.tabContainer.mTabstrip.smoothScroll;
 
     let document = this.tabBrowser.ownerDocument;
 
@@ -288,6 +289,7 @@ LullTheTabs.prototype = {
       this.unhookOpenInBackground();
     }
 
+    this.smoothScroll = null;
     this.tabBrowser = null;
     this.browserWindow = null;
   },
@@ -498,7 +500,20 @@ LullTheTabs.prototype = {
       }
     }
 
+    // Temporarily disable smoothScroll to avoid undesirable side effects of the addTab() call.
+    if (this.smoothScroll) {
+      tabbrowser.tabContainer.mTabstrip.smoothScroll = false;
+    }
+
     let newtab = tabbrowser.addTab(null, {skipAnimation: true});
+
+    if (this.smoothScroll) {
+      // We need to use setTimeout() because addTab() uses it to call _handleNewTab().
+      this.browserWindow.setTimeout(function() {
+        tabbrowser.tabContainer.mTabstrip.smoothScroll = true;
+      }, 0);
+    }
+
     // Copy the session state from the original tab to the new one.
     // If we ever support a mode where 'browser.sessionstore.max_concurrent_tabs'
     // wasn't set to 0, we'd have to do some trickery here.
