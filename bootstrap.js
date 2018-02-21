@@ -498,11 +498,11 @@ LullTheTabs.prototype = {
       }
     }
 
-    let state = gSessionStore.getTabState(aTab);
     let newtab = tabbrowser.addTab(null, {skipAnimation: true});
+    // Copy the session state from the original tab to the new one.
     // If we ever support a mode where 'browser.sessionstore.max_concurrent_tabs'
     // wasn't set to 0, we'd have to do some trickery here.
-    gSessionStore.setTabState(newtab, state);
+    gSessionStore.setTabState(newtab, gSessionStore.getTabState(aTab));
 
     // Move the new tab next to the one we're removing, but not in
     // front of it as that confuses Tree Style Tab.
