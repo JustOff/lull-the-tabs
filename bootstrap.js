@@ -682,8 +682,7 @@ LullTheTabs.prototype = {
 
   onClickButton: function(aEvent) {
     if (aEvent.ctrlKey || aEvent.metaKey) {
-      let mrw = Services.wm.getMostRecentWindow("navigator:browser");
-      mrw.BrowserOpenAddonsMgr("addons://detail/lull-the-tabs@Off.JustOff/preferences");
+      this.browserWindow.BrowserOpenAddonsMgr("addons://detail/lull-the-tabs@Off.JustOff/preferences");
     } else {
       this.unloadTab(this.tabBrowser.selectedTab);
     }
