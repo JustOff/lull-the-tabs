@@ -392,6 +392,19 @@ LullTheTabs.prototype = {
     }
 
     if (isWhiteListed(tab.linkedBrowser.currentURI)) {
+      // If we whitelisting by a wildcard, display it instead of the current host.
+      let whitelist = [];
+      let wlpref = Services.prefs.getComplexValue(branch + "exceptionList", Ci.nsISupportsString).data;
+      if (wlpref) {
+        whitelist = wlpref.split(";");
+      }
+      for (let i = 0; i < whitelist.length; i++) {
+        let reg = new RegExp("^" + whitelist[i].replace(/\./g,"\\.").replace(/\*/g,".*") + "$");
+        if (reg.test(host)) {
+          host = whitelist[i];
+          break;
+        }
+      }
       menuitem_neverUnload.setAttribute("checked", "true");
       menuitem_unloadTab.setAttribute("disabled", "true");
     } else {
