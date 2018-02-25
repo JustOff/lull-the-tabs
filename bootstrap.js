@@ -507,14 +507,15 @@ LullTheTabs.prototype = {
       }
     }
 
-    // Temporarily disable smoothScroll to avoid undesirable side effects of the addTab() call.
-    if (this.smoothScroll) {
+    // If we were called from the timer, temporarily disable smoothScroll 
+    // to avoid undesirable side effects of the addTab() call.
+    if (aTimer & this.smoothScroll) {
       tabbrowser.tabContainer.mTabstrip.smoothScroll = false;
     }
 
     let newtab = tabbrowser.addTab(null, {skipAnimation: true});
 
-    if (this.smoothScroll) {
+    if (aTimer & this.smoothScroll) {
       // We need to use setTimeout() because addTab() uses it to call _handleNewTab().
       this.browserWindow.setTimeout(function() {
         tabbrowser.tabContainer.mTabstrip.smoothScroll = true;
