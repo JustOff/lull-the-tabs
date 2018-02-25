@@ -473,11 +473,18 @@ LullTheTabs.prototype = {
   /**
    * Unload a tab.
    */
-  unloadTab: function(aTab) {
+  unloadTab: function(aTab, aTimer) {
     // Ignore tabs that are already unloaded or are on the host whitelist.
     if (isWhiteListed(aTab.linkedBrowser.currentURI) || hasPendingAttribute(aTab) ||
         !(Services.prefs.getBoolPref(ON_DEMAND_PREF)) ||
         aTab.getAttribute("pinned") == "true" && !(Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF))) {
+      return;
+    }
+
+    // If we were called from the timer and the browser is in full-screen, reschedule the unloading.
+    if (aTimer && (this.browserWindow.document.fullscreenElement ||
+                   this.browserWindow.document.mozFullScreenElement)) {
+      this.startTimer(aTab, 5);
       return;
     }
 
@@ -619,7 +626,7 @@ LullTheTabs.prototype = {
     domRegex = null;
   },
 
-  startTimer: function(aTab) {
+  startTimer: function(aTab, aTimeout) {
     if (hasPendingAttribute(aTab)) {
       return;
     }
@@ -627,13 +634,16 @@ LullTheTabs.prototype = {
       this.clearTimer(aTab);
     }
     let timeout = Services.prefs.getIntPref(branch + "unloadTimeout") * 60 * 1000;
+    if (aTimeout) {
+      timeout = Math.min(timeout, aTimeout * 60 * 1000);
+    }
     let window = aTab.ownerDocument.defaultView;
     // Allow 'this' to leak into the inline function
     let self = this;
     aTab._lullTheTabsTimer = window.setTimeout(function() {
       // The timer will be removed automatically since
       // unloadTab() will close and replace the original tab.
-      self.unloadTab(aTab);
+      self.unloadTab(aTab, true);
     }, timeout);
   },
 
