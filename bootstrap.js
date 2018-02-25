@@ -32,10 +32,14 @@ let styleSheetURI = Services.io.newURI("chrome://lull-the-tabs/skin/style.css", 
 
 let domRegex = null, gWindowListener;
 
-function parseCustomProto(aURI) {
-  let match = /^(\w+:\w+)(\?.+)?$/.exec(aURI.spec);
-  if (match) {
-    return match[1];
+function getHostOrCustomProtoURL(aURI) {
+  try {
+    return aURI.host;
+  } catch (e) {
+    let match = /^(\w+:\w+)(\?.+)?$/.exec(aURI.spec);
+    if (match) {
+      return match[1];
+    }
   }
 }
 
@@ -48,11 +52,7 @@ function isWhiteListed(aURI) {
       return false;
     }
   }
-  try {
-    return domRegex.test(aURI.host);
-  } catch (e) {
-    return domRegex.test(parseCustomProto(aURI));
-  }
+  return domRegex.test(getHostOrCustomProtoURL(aURI));
 }
 
 function hasPendingAttribute(aTab) {
@@ -374,12 +374,7 @@ LullTheTabs.prototype = {
                            tab.getAttribute("pinned") == "true" &&
                            !(Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF));
 
-    let host;
-    try {
-      host = tab.linkedBrowser.currentURI.host;
-    } catch (ex) {
-      host = parseCustomProto(tab.linkedBrowser.currentURI);
-    }
+    let host = getHostOrCustomProtoURL(tab.linkedBrowser.currentURI);
 
     if (!host) {
       menuitem_neverUnload.setAttribute("hidden", "true");
@@ -587,14 +582,9 @@ LullTheTabs.prototype = {
   },
 
   toggleWhitelist: function(aTab, e) {
-    let host;
-    try {
-      host = aTab.linkedBrowser.currentURI.host;
-    } catch(ex) {
-      host = parseCustomProto(aTab.linkedBrowser.currentURI)
-      if (!host) {
-        return;
-      }
+    let host = getHostOrCustomProtoURL(aTab.linkedBrowser.currentURI);
+    if (!host) {
+      return;
     }
 
     let whitelist = [];
