@@ -32,6 +32,13 @@ let styleSheetURI = Services.io.newURI("chrome://lull-the-tabs/skin/style.css", 
 
 let domRegex = null, gWindowListener;
 
+function parseCustomProto(aURI) {
+  let match = /^(\w+:\w+)(\?.+)?$/.exec(aURI.spec);
+  if (match) {
+    return match[1];
+  }
+}
+
 function isWhiteListed(aURI) {
   if (domRegex === null) {
     try {
@@ -44,8 +51,7 @@ function isWhiteListed(aURI) {
   try {
     return domRegex.test(aURI.host);
   } catch (e) {
-    // Most likely uri.host failed, so it isn't on the white list.
-    return false;
+    return domRegex.test(parseCustomProto(aURI));
   }
 }
 
@@ -372,10 +378,7 @@ LullTheTabs.prototype = {
     try {
       host = tab.linkedBrowser.currentURI.host;
     } catch (ex) {
-      // Most likely uri.host doesn't exist which probably means
-      // whitelisting doesn't make sense on this tab.  Set empty
-      // host so we don't show the menu item
-      host = '';
+      host = parseCustomProto(tab.linkedBrowser.currentURI);
     }
 
     if (!host) {
@@ -389,18 +392,6 @@ LullTheTabs.prototype = {
     }
 
     if (isWhiteListed(tab.linkedBrowser.currentURI)) {
-      let whitelist = [];
-      let wlpref = Services.prefs.getComplexValue(branch + "exceptionList", Ci.nsISupportsString).data;
-      if (wlpref) {
-        whitelist = wlpref.split(";");
-      }
-      for (let i = 0; i < whitelist.length; i++) {
-        let reg = new RegExp("^" + whitelist[i].replace(/\./g,"\\.").replace(/\*/g,".*") + "$");
-        if (reg.test(tab.linkedBrowser.currentURI.host)) {
-          host = whitelist[i];
-          break;
-        }
-      }
       menuitem_neverUnload.setAttribute("checked", "true");
       menuitem_unloadTab.setAttribute("disabled", "true");
     } else {
@@ -587,8 +578,10 @@ LullTheTabs.prototype = {
     try {
       host = aTab.linkedBrowser.currentURI.host;
     } catch(ex) {
-      // Most likely uri.host doesn't exist.  Ignore then.
-      return;
+      host = parseCustomProto(aTab.linkedBrowser.currentURI)
+      if (!host) {
+        return;
+      }
     }
 
     let whitelist = [];
