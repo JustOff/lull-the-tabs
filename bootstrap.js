@@ -684,12 +684,12 @@ LullTheTabs.prototype = {
         !Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF)) {
       if (!this.button.hasAttribute("protected")) {
         this.button.setAttribute("protected", "true");
-        this.button.setAttribute("tooltiptext", "This tab is protected from unloading");
+        this.button.setAttribute("tooltiptext", "Active tab is protected from unloading");
       }
     } else {
       if (this.button.hasAttribute("protected")) {
         this.button.removeAttribute("protected");
-        this.button.setAttribute("tooltiptext", "Unload this tab");
+        this.button.setAttribute("tooltiptext", "Unload active tab");
       }
     }
   },
@@ -718,7 +718,7 @@ LullTheTabs.prototype = {
     let button = document.createElement("image");
     button.setAttribute("id", "lull-the-tabs-button");
     button.setAttribute("class", "urlbar-icon");
-    button.setAttribute("tooltiptext", "Unload this tab");
+    button.setAttribute("tooltiptext", "Unload active tab");
     button.setAttribute("onclick", "gBrowser.LullTheTabs.onClickButton(event);"); 
     let urlBarIcons = document.getElementById("urlbar-icons");
     urlBarIcons.insertBefore(button, urlBarIcons.firstChild);
