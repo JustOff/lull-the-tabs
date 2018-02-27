@@ -55,10 +55,6 @@ function isWhiteListed(aURI) {
   return domRegex.test(getHostOrCustomProtoURL(aURI));
 }
 
-function hasPendingAttribute(aTab) {
-  return aTab.getAttribute("pending") == "true";
-}
-
 /*
  * In relation to a given tab, find the closest tab that is loaded.
  * Note: if there's no such tab available, this will return unloaded
@@ -75,7 +71,7 @@ function findClosestLoadedTab(aTab, aTabbrowser) {
 
   // If leftIsNearest, then try previous sibling first
   if (Services.prefs.getBoolPref(branch + "leftIsNearest") &&
-      aTab.previousSibling && !hasPendingAttribute(aTab.previousSibling)) {
+      aTab.previousSibling && !aTab.previousSibling.hasAttribute("pending")) {
     return aTab.previousSibling;
   }
 
@@ -83,7 +79,7 @@ function findClosestLoadedTab(aTab, aTabbrowser) {
   // part of the same tab group.
   if (aTab.owner
       && Services.prefs.getBoolPref("browser.tabs.selectOwnerOnClose")
-      && !hasPendingAttribute(aTab.owner)) {
+      && !aTab.owner.hasAttribute("pending")) {
     let i = 0;
     while (i < visibleTabs.length) {
       if (visibleTabs[i] == aTab.owner) {
@@ -119,7 +115,7 @@ function findClosestLoadedTab(aTab, aTabbrowser) {
          (tabIndex + i < visibleTabs.length)) {
     let offsetIncremented = 0;
     if (tabIndex + i < visibleTabs.length) {
-      if (!hasPendingAttribute(visibleTabs[tabIndex + i]) &&
+      if (!visibleTabs[tabIndex + i].hasAttribute("pending") &&
           visibleTabs[tabIndex + i] != aTab) {
         // The '!= aTab' test is to rule out the case where i == 0 and
         // aTab is being unloaded rather than closed, so that tabIndex
@@ -137,7 +133,7 @@ function findClosestLoadedTab(aTab, aTabbrowser) {
       i++;
     }
     if (tabIndex - i >= 0) {
-      if(!hasPendingAttribute(visibleTabs[tabIndex - i]) &&
+      if(!visibleTabs[tabIndex - i].hasAttribute("pending") &&
          visibleTabs[tabIndex - i] != aTab) {
         return visibleTabs[tabIndex - i];
       }
@@ -329,7 +325,7 @@ LullTheTabs.prototype = {
     let menuitem_unloadTab = document.getElementById("lull-the-tabs-unload");
     let menuitem_neverUnload = document.getElementById("lull-the-tabs-never-unload");
 
-    let needlessToUnload = hasPendingAttribute(tab) ||
+    let needlessToUnload = tab.hasAttribute("pending") ||
                            tab.hasAttribute("pinned") &&
                            !Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF);
 
@@ -433,7 +429,7 @@ LullTheTabs.prototype = {
    */
   unloadTab: function(aTab, aTimer) {
     // Ignore tabs that are already unloaded or are on the host whitelist.
-    if (isWhiteListed(aTab.linkedBrowser.currentURI) || hasPendingAttribute(aTab) ||
+    if (isWhiteListed(aTab.linkedBrowser.currentURI) || aTab.hasAttribute("pending") ||
         !Services.prefs.getBoolPref(ON_DEMAND_PREF) ||
         aTab.hasAttribute("pinned") && !Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF)) {
       return;
@@ -579,7 +575,7 @@ LullTheTabs.prototype = {
   },
 
   startTimer: function(aTab, aTimeout) {
-    if (hasPendingAttribute(aTab)) {
+    if (aTab.hasAttribute("pending")) {
       return;
     }
     if (aTab._lullTheTabsTimer) {
