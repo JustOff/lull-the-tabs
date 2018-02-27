@@ -330,8 +330,8 @@ LullTheTabs.prototype = {
     let menuitem_neverUnload = document.getElementById("lull-the-tabs-never-unload");
 
     let needlessToUnload = hasPendingAttribute(tab) ||
-                           tab.getAttribute("pinned") == "true" &&
-                           !(Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF));
+                           tab.hasAttribute("pinned") &&
+                           !Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF);
 
     let host = getHostOrCustomProtoURL(tab.linkedBrowser.currentURI);
 
@@ -434,8 +434,8 @@ LullTheTabs.prototype = {
   unloadTab: function(aTab, aTimer) {
     // Ignore tabs that are already unloaded or are on the host whitelist.
     if (isWhiteListed(aTab.linkedBrowser.currentURI) || hasPendingAttribute(aTab) ||
-        !(Services.prefs.getBoolPref(ON_DEMAND_PREF)) ||
-        aTab.getAttribute("pinned") == "true" && !(Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF))) {
+        !Services.prefs.getBoolPref(ON_DEMAND_PREF) ||
+        aTab.hasAttribute("pinned") && !Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF)) {
       return;
     }
 
@@ -559,11 +559,6 @@ LullTheTabs.prototype = {
           break;
         }
       }
-      if (this.button && aTab == this.tabBrowser.selectedTab && 
-          (this.tabBrowser.selectedTab.getAttribute("pinned") != "true" ||
-           Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF))) {
-        this.button.style.display = "block";
-      }
     } else {
       if (e.ctrlKey) {
         try {
@@ -571,15 +566,16 @@ LullTheTabs.prototype = {
         } catch (e) {}
       }
       whitelist.push(host);
-      if (this.button && aTab == this.tabBrowser.selectedTab) {
-        this.button.style.display = "none";
-      }
     }
 
     let str = Cc["@mozilla.org/supports-string;1"].createInstance(Ci.nsISupportsString);
     str.data = whitelist.join(";");
     Services.prefs.setComplexValue(branch + "exceptionList", Ci.nsISupportsString, str);
     domRegex = null;
+
+    if (this.button && aTab == this.tabBrowser.selectedTab) {
+      this.updateButton(aTab.linkedBrowser.currentURI);
+    }
   },
 
   startTimer: function(aTab, aTimeout) {
@@ -683,12 +679,18 @@ LullTheTabs.prototype = {
   },
 
   updateButton: function(aURI) {
-    if (!isWhiteListed(aURI) &&
-        (this.tabBrowser.selectedTab.getAttribute("pinned") != "true" || 
-         Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF))) {
-      this.button.style.display = "block";
+    if (isWhiteListed(aURI) ||
+        this.tabBrowser.selectedTab.hasAttribute("pinned") && 
+        !Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF)) {
+      if (!this.button.hasAttribute("protected")) {
+        this.button.setAttribute("protected", "true");
+        this.button.setAttribute("tooltiptext", "This tab is protected from unloading");
+      }
     } else {
-      this.button.style.display = "none";
+      if (this.button.hasAttribute("protected")) {
+        this.button.removeAttribute("protected");
+        this.button.setAttribute("tooltiptext", "Unload this tab");
+      }
     }
   },
 

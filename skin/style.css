@@ -6,12 +6,20 @@
   }
 
   #lull-the-tabs-button {
-    list-style-image: url("chrome://lull-the-tabs/skin/icon.png");
+    list-style-image: url("chrome://lull-the-tabs/skin/urlbar-icon.png");
     -moz-image-region: rect(0px 16px 16px 0px);
   }
 
-  #lull-the-tabs-button:hover {
+  #lull-the-tabs-button:not([protected]):hover {
     -moz-image-region: rect(0px 32px 16px 16px);
+  }
+
+  #lull-the-tabs-button[protected] {
+    -moz-image-region: rect(0px 48px 16px 32px);
+  }
+
+  #lull-the-tabs-button[protected]:hover {
+    -moz-image-region: rect(0px 64px 16px 48px);
   }
 
   .tabbrowser-tab[bgpending] .tab-label {
