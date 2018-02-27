@@ -3,6 +3,8 @@
   <setting type="bool" pref="browser.sessionstore.restore_on_demand" title="Enable tab unloading:">
   And don't load tabs until selected on browser start
   </setting>
+  <setting type="bool" pref="extensions.lull-the-tabs.showContext" title="Show unloading controls in the tab context menu:">
+  </setting>
   <setting type="bool" pref="extensions.lull-the-tabs.showButton" title="Show the unload button in the address bar:">
   </setting>
   <setting type="bool" pref="browser.sessionstore.restore_pinned_tabs_on_demand" title="Allow unloading of pinned tabs:">

@@ -196,42 +196,6 @@ LullTheTabs.prototype = {
     this.browserWindow = aWindow;
     this.tabBrowser = aWindow.gBrowser;
     this.smoothScroll = this.tabBrowser.tabContainer.mTabstrip.smoothScroll;
-
-    let document = this.tabBrowser.ownerDocument;
-
-    let tabContextMenu = document.getElementById("tabContextMenu");
-    let openTabInWindow = document.getElementById("context_openTabInWindow");
-
-    // add "Unload Tab" menuitem to tab context menu
-    let menuitem_unloadTab = document.createElement("menuitem");
-    menuitem_unloadTab.setAttribute("id", "lull-the-tabs-unload");
-    menuitem_unloadTab.setAttribute("label", "Unload Tab"); // TODO l10n
-    menuitem_unloadTab.setAttribute("tbattr", "tabbrowser-multiple");
-    menuitem_unloadTab.setAttribute(
-      "oncommand", "gBrowser.LullTheTabs.unloadTab(gBrowser.mContextTab);");
-    tabContextMenu.insertBefore(menuitem_unloadTab, openTabInWindow);
-
-    // add "Unload Other Tabs" menuitem to tab context menu
-    let menuitem_unloadOtherTabs = document.createElement("menuitem");
-    menuitem_unloadOtherTabs.setAttribute("id", "lull-the-tabs-unload-others");
-    menuitem_unloadOtherTabs.setAttribute("label", "Unload Other Tabs"); // TODO l10n
-    menuitem_unloadOtherTabs.setAttribute("tbattr", "tabbrowser-multiple");
-    menuitem_unloadOtherTabs.setAttribute(
-      "oncommand", "gBrowser.LullTheTabs.unloadOtherTabs(gBrowser.mContextTab);");
-    tabContextMenu.insertBefore(menuitem_unloadOtherTabs, openTabInWindow);
-
-    // add "Never Unload" menuitem to tab context menu
-    let menuitem_neverUnload = document.createElement("menuitem");
-    menuitem_neverUnload.setAttribute("id", "lull-the-tabs-never-unload");
-    menuitem_neverUnload.setAttribute("label", "Never Unload Tab"); // TODO l10n
-    menuitem_neverUnload.setAttribute("type", "checkbox");
-    menuitem_neverUnload.setAttribute("autocheck", "false");
-    menuitem_neverUnload.setAttribute(
-      "oncommand", "gBrowser.LullTheTabs.toggleWhitelist(gBrowser.mContextTab, event);");
-    tabContextMenu.insertBefore(menuitem_neverUnload, openTabInWindow);
-
-    tabContextMenu.addEventListener('popupshowing', this, false);
-
     this.previousTab = null;
     this.selectedTab = this.tabBrowser.selectedTab;
 
@@ -246,6 +210,10 @@ LullTheTabs.prototype = {
       this.startAllTimers();
     }
 
+    if (Services.prefs.getBoolPref(branch + "showContext")) {
+      this.addContext();
+    }
+
     if (Services.prefs.getBoolPref(branch + "showButton")) {
       this.addButton();
     }
@@ -256,36 +224,11 @@ LullTheTabs.prototype = {
   },
 
   done: function() {
-    let document = this.tabBrowser.ownerDocument;
-
-    // remove tab context menu related stuff
-    let menuitem_unloadTab = document.getElementById("lull-the-tabs-unload");
-    if (menuitem_unloadTab && menuitem_unloadTab.parentNode) {
-      menuitem_unloadTab.parentNode.removeChild(menuitem_unloadTab);
-    }
-    let menuitem_unloadOtherTabs = document.getElementById("lull-the-tabs-unload-others");
-    if (menuitem_unloadOtherTabs && menuitem_unloadOtherTabs.parentNode) {
-      menuitem_unloadOtherTabs.parentNode.removeChild(menuitem_unloadOtherTabs);
-    }
-    let menuitem_neverUnload = document.getElementById("lull-the-tabs-never-unload");
-    if (menuitem_neverUnload && menuitem_neverUnload.parentNode) {
-      menuitem_neverUnload.parentNode.removeChild(menuitem_neverUnload);
-    }
-    let tabContextMenu = document.getElementById("tabContextMenu");
-
-    tabContextMenu.removeEventListener('popupshowing', this, false);
-
-    this.tabBrowser.tabContainer.removeEventListener('TabOpen', this, false);
-    this.tabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
-    this.tabBrowser.tabContainer.removeEventListener('TabClose', this, false);
-
-    this.prefBranch.removeObserver("", this);
-    this.prefBranch = null;
-
     this.clearAllTimers();
 
-    this.previousTab = null;
-    this.selectedTab = null;
+    if (Services.prefs.getBoolPref(branch + "showContext")) {
+      this.removeContext();
+    }
 
     if (Services.prefs.getBoolPref(branch + "showButton")) {
       this.removeButton();
@@ -295,6 +238,15 @@ LullTheTabs.prototype = {
       this.unhookOpenInBackground();
     }
 
+    this.tabBrowser.tabContainer.removeEventListener('TabOpen', this, false);
+    this.tabBrowser.tabContainer.removeEventListener('TabSelect', this, false);
+    this.tabBrowser.tabContainer.removeEventListener('TabClose', this, false);
+
+    this.prefBranch.removeObserver("", this);
+    this.prefBranch = null;
+
+    this.previousTab = null;
+    this.selectedTab = null;
     this.smoothScroll = null;
     this.tabBrowser = null;
     this.browserWindow = null;
@@ -337,6 +289,13 @@ LullTheTabs.prototype = {
         if (Services.prefs.getBoolPref(branch + "autoUnload")) {
           this.clearAllTimers();
           this.startAllTimers();
+        }
+        break;
+      case 'showContext':
+        if (Services.prefs.getBoolPref(branch + "showContext")) {
+          this.addContext();
+        } else {
+          this.removeContext();
         }
         break;
       case 'showButton':
@@ -666,6 +625,63 @@ LullTheTabs.prototype = {
     }
   },
 
+  addContext: function() {
+    let document = this.tabBrowser.ownerDocument;
+    let tabContextMenu = document.getElementById("tabContextMenu");
+    let openTabInWindow = document.getElementById("context_openTabInWindow");
+
+    // add "Unload Tab" menuitem to tab context menu
+    let menuitem_unloadTab = document.createElement("menuitem");
+    menuitem_unloadTab.setAttribute("id", "lull-the-tabs-unload");
+    menuitem_unloadTab.setAttribute("label", "Unload Tab"); // TODO l10n
+    menuitem_unloadTab.setAttribute("tbattr", "tabbrowser-multiple");
+    menuitem_unloadTab.setAttribute(
+      "oncommand", "gBrowser.LullTheTabs.unloadTab(gBrowser.mContextTab);");
+    tabContextMenu.insertBefore(menuitem_unloadTab, openTabInWindow);
+
+    // add "Unload Other Tabs" menuitem to tab context menu
+    let menuitem_unloadOtherTabs = document.createElement("menuitem");
+    menuitem_unloadOtherTabs.setAttribute("id", "lull-the-tabs-unload-others");
+    menuitem_unloadOtherTabs.setAttribute("label", "Unload Other Tabs"); // TODO l10n
+    menuitem_unloadOtherTabs.setAttribute("tbattr", "tabbrowser-multiple");
+    menuitem_unloadOtherTabs.setAttribute(
+      "oncommand", "gBrowser.LullTheTabs.unloadOtherTabs(gBrowser.mContextTab);");
+    tabContextMenu.insertBefore(menuitem_unloadOtherTabs, openTabInWindow);
+
+    // add "Never Unload" menuitem to tab context menu
+    let menuitem_neverUnload = document.createElement("menuitem");
+    menuitem_neverUnload.setAttribute("id", "lull-the-tabs-never-unload");
+    menuitem_neverUnload.setAttribute("label", "Never Unload Tab"); // TODO l10n
+    menuitem_neverUnload.setAttribute("type", "checkbox");
+    menuitem_neverUnload.setAttribute("autocheck", "false");
+    menuitem_neverUnload.setAttribute(
+      "oncommand", "gBrowser.LullTheTabs.toggleWhitelist(gBrowser.mContextTab, event);");
+    tabContextMenu.insertBefore(menuitem_neverUnload, openTabInWindow);
+
+    tabContextMenu.addEventListener('popupshowing', this, false);
+  },
+
+  removeContext: function() {
+    let document = this.tabBrowser.ownerDocument;
+    let tabContextMenu = document.getElementById("tabContextMenu");
+
+    tabContextMenu.removeEventListener('popupshowing', this, false);
+
+    // remove tab context menu related stuff
+    let menuitem_unloadTab = document.getElementById("lull-the-tabs-unload");
+    if (menuitem_unloadTab && menuitem_unloadTab.parentNode) {
+      menuitem_unloadTab.parentNode.removeChild(menuitem_unloadTab);
+    }
+    let menuitem_unloadOtherTabs = document.getElementById("lull-the-tabs-unload-others");
+    if (menuitem_unloadOtherTabs && menuitem_unloadOtherTabs.parentNode) {
+      menuitem_unloadOtherTabs.parentNode.removeChild(menuitem_unloadOtherTabs);
+    }
+    let menuitem_neverUnload = document.getElementById("lull-the-tabs-never-unload");
+    if (menuitem_neverUnload && menuitem_neverUnload.parentNode) {
+      menuitem_neverUnload.parentNode.removeChild(menuitem_neverUnload);
+    }
+  },
+
   updateButton: function(aURI) {
     if (!isWhiteListed(aURI) &&
         (this.tabBrowser.selectedTab.getAttribute("pinned") != "true" || 
@@ -898,6 +914,7 @@ function startup(aData, aReason) {
   defaultBranch.setIntPref("selectOnUnload", 0);
   defaultBranch.setIntPref("selectOnClose", 1);
   defaultBranch.setBoolPref("leftIsNearest", false);
+  defaultBranch.setBoolPref("showContext", true);
   defaultBranch.setBoolPref("showButton", true);
   defaultBranch.setBoolPref("pauseBackgroundTabs", false);
   defaultBranch.setBoolPref("openNextToCurrent", false);
