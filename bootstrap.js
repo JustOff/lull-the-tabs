@@ -366,7 +366,7 @@ LullTheTabs.prototype = {
       }
     }
 
-    menuitem_neverUnload.setAttribute("label", "Keep " + host + " Loaded");
+    menuitem_neverUnload.setAttribute("label", 'Never Unload "' + host + '"');
     menuitem_neverUnload.removeAttribute("hidden");
   },
 
