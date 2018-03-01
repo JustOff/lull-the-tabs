@@ -7,6 +7,20 @@ const ON_DEMAND_PREF = "browser.sessionstore.restore_on_demand";
 const PINNED_ON_DEMAND_PREF = "browser.sessionstore.restore_pinned_tabs_on_demand";
 const LOAD_IN_BACKGROUND = "browser.tabs.loadInBackground";
 
+const DEFAULT_PREFS = {
+  importBarTab: true,
+  showContext: true,
+  showButton: true,
+  selectOnUnload: 0,
+  pauseBackgroundTabs: false,
+  openNextToCurrent: false,
+  autoUnload: false,
+  unloadTimeout: 120,
+  exceptionList: "",
+  selectOnClose: 1,
+  leftIsNearest: false,
+};
+
 XPCOMUtils.defineLazyServiceGetter(this, "gSessionStore",
                                    "@mozilla.org/browser/sessionstore;1",
                                    "nsISessionStore");
@@ -31,6 +45,47 @@ let styleSheetService = Cc["@mozilla.org/content/style-sheet-service;1"].getServ
 let styleSheetURI = Services.io.newURI("chrome://lull-the-tabs/skin/style.css", null, null);
 
 let domRegex = null, gWindowListener;
+
+function initPreferences() {
+  let defaultBranch = Services.prefs.getDefaultBranch(branch);
+  let syncBranch = Services.prefs.getDefaultBranch("services.sync.prefs.sync." + branch);
+  for (let pref in DEFAULT_PREFS) {
+    switch (typeof DEFAULT_PREFS[pref]) {
+      case "string":
+        defaultBranch.setCharPref(pref, DEFAULT_PREFS[pref]);
+        break;
+      case "number":
+        defaultBranch.setIntPref(pref, DEFAULT_PREFS[pref]);
+        break;
+      case "boolean":
+        defaultBranch.setBoolPref(pref, DEFAULT_PREFS[pref]);
+        break;
+    }
+    syncBranch.setBoolPref(pref, true);
+  }
+
+  if (Services.prefs.getBoolPref(branch + "importBarTab")) {
+    Services.prefs.setBoolPref(branch + "importBarTab", false);
+    try {
+      Services.prefs.setCharPref(branch + "exceptionList", Services.prefs.getCharPref("extensions.bartab.whitelist"));
+    } catch (e) {}
+    try {
+      Services.prefs.setBoolPref(branch + "autoUnload", Services.prefs.getBoolPref("extensions.bartab.unloadAfterTimeout"));
+      Services.prefs.setIntPref(branch + "unloadTimeout",
+                                Math.round(Services.prefs.getIntPref("extensions.bartab.timeoutUnit") *
+                                           Services.prefs.getIntPref("extensions.bartab.timeoutValue") / 60));
+    } catch (e) {}
+    try {
+      if (!Services.prefs.getBoolPref("extensions.bartab.findClosestLoadedTab")) {
+        Services.prefs.setIntPref(branch + "selectOnClose", 0);
+      }
+    } catch (e) {}
+    try {
+      Services.prefs.setBoolPref(branch + "pauseBackgroundTabs", 
+                                 Services.prefs.getIntPref("extensions.bartab.loadBackgroundTabs") == 1);
+    } catch (e) {}
+  }
+}
 
 function getHostOrCustomProtoURL(aURI) {
   try {
@@ -904,40 +959,7 @@ function browserWindowShutdown(aWindow) {
 }
 
 function startup(aData, aReason) {
-  let defaultBranch = Services.prefs.getDefaultBranch(branch);
-  defaultBranch.setBoolPref("autoUnload", false);
-  defaultBranch.setIntPref("unloadTimeout", 120);
-  defaultBranch.setCharPref("exceptionList", "");
-  defaultBranch.setBoolPref("importBarTab", true);
-  defaultBranch.setIntPref("selectOnUnload", 0);
-  defaultBranch.setIntPref("selectOnClose", 1);
-  defaultBranch.setBoolPref("leftIsNearest", false);
-  defaultBranch.setBoolPref("showContext", true);
-  defaultBranch.setBoolPref("showButton", true);
-  defaultBranch.setBoolPref("pauseBackgroundTabs", false);
-  defaultBranch.setBoolPref("openNextToCurrent", false);
-
-  if (Services.prefs.getBoolPref(branch + "importBarTab")) {
-    Services.prefs.setBoolPref(branch + "importBarTab", false);
-    try {
-      Services.prefs.setCharPref(branch + "exceptionList", Services.prefs.getCharPref("extensions.bartab.whitelist"));
-    } catch (e) {}
-    try {
-      Services.prefs.setBoolPref(branch + "autoUnload", Services.prefs.getBoolPref("extensions.bartab.unloadAfterTimeout"));
-      Services.prefs.setIntPref(branch + "unloadTimeout",
-                                Math.round(Services.prefs.getIntPref("extensions.bartab.timeoutUnit") *
-                                           Services.prefs.getIntPref("extensions.bartab.timeoutValue") / 60));
-    } catch (e) {}
-    try {
-      if (!Services.prefs.getBoolPref("extensions.bartab.findClosestLoadedTab")) {
-        Services.prefs.setIntPref(branch + "selectOnClose", 0);
-      }
-    } catch (e) {}
-    try {
-      Services.prefs.setBoolPref(branch + "pauseBackgroundTabs", 
-                                 Services.prefs.getIntPref("extensions.bartab.loadBackgroundTabs") == 1);
-    } catch (e) {}
-  }
+  initPreferences();
 
   if (!styleSheetService.sheetRegistered(styleSheetURI, styleSheetService.USER_SHEET)) {
     styleSheetService.loadAndRegisterSheet(styleSheetURI, styleSheetService.USER_SHEET);
