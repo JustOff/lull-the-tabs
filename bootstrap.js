@@ -482,49 +482,52 @@ LullTheTabs.prototype = {
   /**
    * Unload a tab.
    */
-  unloadTab: function(aTab, aTimer) {
-    // Ignore tabs that are already unloaded or are on the host whitelist.
-    if (isWhiteListed(aTab.linkedBrowser.currentURI) || aTab.hasAttribute("pending") ||
-        !Services.prefs.getBoolPref(ON_DEMAND_PREF) ||
+  unloadTab: function(aTab, aOptions) {
+    // Ignore tabs that are pinned, already unloaded or whitelisted, unless the unload is forced.
+    if (isWhiteListed(aTab.linkedBrowser.currentURI) && (!aOptions || aOptions && !aOptions.force) ||
+        aTab.hasAttribute("pending") || !Services.prefs.getBoolPref(ON_DEMAND_PREF) ||
         aTab.hasAttribute("pinned") && !Services.prefs.getBoolPref(PINNED_ON_DEMAND_PREF)) {
       return;
     }
 
     // If we were called from the timer and the browser is in full-screen, reschedule the unloading.
-    if (aTimer && (this.browserWindow.document.fullscreenElement ||
-                   this.browserWindow.document.mozFullScreenElement)) {
+    if (aOptions && aOptions.timer && (this.browserWindow.document.fullscreenElement ||
+                                       this.browserWindow.document.mozFullScreenElement)) {
       this.startTimer(aTab, 5);
       return;
     }
 
     let tabbrowser = this.tabBrowser;
 
-    // Make sure that we're not on this tab.
-    if (aTab.selected) {
-      // If we are, then check selectOnUnload option.
-      if (Services.prefs.getIntPref(branch + "selectOnUnload") == 0) {
-        // Find the closest tab that isn't unloaded.
-        let activeTab = findClosestLoadedTab(aTab, tabbrowser);
-        if (activeTab) {
-          tabbrowser.selectedTab = activeTab;
-        }
-      } else {
-        // Or select the previous tab.
-        if (this.previousTab) {
-          tabbrowser.selectedTab = this.previousTab;
+    // If we are not in the full reload mode, find a tab to select.
+    if (!aOptions || aOptions && (!aOptions.force || !aOptions.reload)) {
+      // Make sure that we're not on this tab.
+      if (aTab.selected) {
+        // If we are, then check selectOnUnload option.
+        if (Services.prefs.getIntPref(branch + "selectOnUnload") == 0) {
+          // Find the closest tab that isn't unloaded.
+          let activeTab = findClosestLoadedTab(aTab, tabbrowser);
+          if (activeTab) {
+            tabbrowser.selectedTab = activeTab;
+          }
+        } else {
+          // Or select the previous tab.
+          if (this.previousTab) {
+            tabbrowser.selectedTab = this.previousTab;
+          }
         }
       }
     }
 
     // If we were called from the timer, temporarily disable smoothScroll 
     // to avoid undesirable side effects of the addTab() call.
-    if (aTimer & this.smoothScroll) {
+    if (aOptions && aOptions.timer & this.smoothScroll) {
       tabbrowser.tabContainer.mTabstrip.smoothScroll = false;
     }
 
     let newtab = tabbrowser.addTab(null, {skipAnimation: true});
 
-    if (aTimer & this.smoothScroll) {
+    if (aOptions && aOptions.timer & this.smoothScroll) {
       // We need to use setTimeout() because addTab() uses it to call _handleNewTab().
       this.browserWindow.setTimeout(function() {
         tabbrowser.tabContainer.mTabstrip.smoothScroll = true;
@@ -552,6 +555,11 @@ LullTheTabs.prototype = {
         tabbrowser.treeStyleTab.attachTabTo(
           aChild, newtab, {dontAnimate: true});
       });
+    }
+
+    // If we are in the full reload mode, select the new tab.
+    if (aOptions && aOptions.force && aOptions.reload) {
+      tabbrowser.selectedTab = newtab;
     }
 
     // Close the original tab.  We're taking the long way round to
@@ -646,7 +654,7 @@ LullTheTabs.prototype = {
     aTab._lullTheTabsTimer = window.setTimeout(function() {
       // The timer will be removed automatically since
       // unloadTab() will close and replace the original tab.
-      self.unloadTab(aTab, true);
+      self.unloadTab(aTab, {timer: true});
     }, timeout);
   },
 
@@ -757,10 +765,11 @@ LullTheTabs.prototype = {
   },
 
   onClickButton: function(aEvent) {
-    if (aEvent.ctrlKey || aEvent.metaKey) {
+    if ((aEvent.ctrlKey || aEvent.metaKey) && aEvent.altKey) {
       this.browserWindow.BrowserOpenAddonsMgr("addons://detail/lull-the-tabs@Off.JustOff/preferences");
     } else {
-      this.unloadTab(this.tabBrowser.selectedTab);
+      this.unloadTab(this.tabBrowser.selectedTab, {force: aEvent.ctrlKey || aEvent.metaKey,
+                                                   reload: aEvent.shiftKey});
     }
   },
 
