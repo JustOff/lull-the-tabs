@@ -809,14 +809,14 @@ LullTheTabs.prototype = {
     asyncFavicons.getFaviconURLForPage(Services.io.newURI(sHref[0] + "//" + sHref[1], null, null), function (aURI) {
       if (aURI && aURI.spec) {
         session["image"] = aURI.spec;
-      } else {
+      } else if (typeof sHref[1] == "string") {
         let hist = gHistoryService;
         let hopt = hist.getNewQueryOptions();
         hopt.queryType = Ci.nsINavHistoryQueryOptions.QUERY_TYPE_HISTORY;
         hopt.maxResults = 1;
         let hquery = hist.getNewQuery();
-        hquery.uri = Services.io.newURI(sHref[0] + "//" + sHref[1], null, null);
-        hquery.uriIsPrefix = true;
+        hquery.domain = sHref[1];
+        hquery.domainIsHost = true;
         let hresult = hist.executeQuery(hquery, hopt);
         hresult.root.containerOpen = true;
         if (hresult.root.childCount) {
