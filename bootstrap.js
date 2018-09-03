@@ -552,6 +552,9 @@ LullTheTabs.prototype = {
       }
       let children = tabbrowser.treeStyleTab.getChildTabs(aTab);
       children.forEach(function(aChild) {
+        // Explicitly detach tabs to prevent them from closing due to a bug in attachTabTo
+        tabbrowser.treeStyleTab.detachTab(
+          aChild, {dontAnimate: true});
         tabbrowser.treeStyleTab.attachTabTo(
           aChild, newtab, {dontAnimate: true});
       });
