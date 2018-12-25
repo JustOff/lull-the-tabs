@@ -835,6 +835,15 @@ LullTheTabs.prototype = {
       newtab.setAttribute("bgpending", true);
       if (Services.prefs.getBoolPref(branch + "openNextToCurrent")) {
         aWindow.gBrowser.moveTabTo(newtab, aWindow.gBrowser.selectedTab._tPos + 1);
+      } else if (Services.prefs.getBoolPref("browser.tabs.insertRelatedAfterCurrent")) {
+        let newTabPos = (aWindow.gBrowser._lastRelatedTab || aWindow.gBrowser.selectedTab)._tPos + 1;
+        if (aWindow.gBrowser._lastRelatedTab) {
+          aWindow.gBrowser._lastRelatedTab.owner = null;
+        } else {
+          newtab.owner = aWindow.gBrowser.selectedTab;
+        }
+        aWindow.gBrowser.moveTabTo(newtab, newTabPos);
+        aWindow.gBrowser._lastRelatedTab = newtab;
       }
       if (PrivateBrowsingUtils.isWindowPrivate(aWindow) || 
           aWindow.gBrowser.selectedTab.getAttribute("privateTab-isPrivate")) {
