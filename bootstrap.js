@@ -571,6 +571,7 @@ LullTheTabs.prototype = {
       if (children && children.length) {
         tk2api.addChildTabs(newtab, children);
       }
+      tk2api.resetTab(aTab);
     }
 
     // If we are in the full reload mode, select the new tab.
