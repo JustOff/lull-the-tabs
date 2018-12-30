@@ -560,6 +560,20 @@ LullTheTabs.prototype = {
       });
     }
 
+    // Restore tree when using Tab Kit 2
+    if (this.browserWindow.tabkit && this.browserWindow.tabkit.api) {
+      let tk2api = this.browserWindow.tabkit.api;
+      let parent = tk2api.getParentTab(aTab);
+      if (parent) {
+        tk2api.addChildTabs(parent, [newtab]);
+      }
+      let children = tk2api.getChildTabs(aTab);
+      if (children && children.length) {
+        tk2api.addChildTabs(newtab, children);
+      }
+      tk2api.resetTab(aTab);
+    }
+
     // If we are in the full reload mode, select the new tab.
     if (aOptions && aOptions.force && aOptions.reload) {
       tabbrowser.selectedTab = newtab;
