@@ -583,6 +583,15 @@ LullTheTabs.prototype = {
     // ensure the nsISessionStore service won't save this in the
     // recently closed tabs.
     if (tabbrowser._beginRemoveTab(aTab, true, null, false)) {
+      let browser = tabbrowser.getBrowserForTab(aTab);
+      if (browser.registeredOpenURI) {
+        if (tabbrowser._placesAutocomplete) {
+          tabbrowser._placesAutocomplete.unregisterOpenPage(browser.registeredOpenURI);
+        } else if (tabbrowser._unifiedComplete) {
+          tabbrowser._unifiedComplete.unregisterOpenPage(browser.registeredOpenURI);
+        }
+        delete browser.registeredOpenURI;
+      }
       tabbrowser._endRemoveTab(aTab);
     }
   },
