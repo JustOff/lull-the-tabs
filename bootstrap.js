@@ -588,7 +588,12 @@ LullTheTabs.prototype = {
         if (tabbrowser._placesAutocomplete) {
           tabbrowser._placesAutocomplete.unregisterOpenPage(browser.registeredOpenURI);
         } else if (tabbrowser._unifiedComplete) {
-          tabbrowser._unifiedComplete.unregisterOpenPage(browser.registeredOpenURI);
+          try {
+            tabbrowser._unifiedComplete.unregisterOpenPage(browser.registeredOpenURI);
+          } catch (e) {
+            let userContextId = tabbrowser.getAttribute("usercontextid") || 0;
+            tabbrowser._unifiedComplete.unregisterOpenPage(browser.registeredOpenURI, userContextId);
+          }
         }
         delete browser.registeredOpenURI;
       }
