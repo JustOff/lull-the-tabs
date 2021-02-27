@@ -1,4 +1,4 @@
-## Lull The Tabs
+### [<sub>⬇</sub> Lull The Tabs](https://github.com/JustOff/lull-the-tabs/releases)
 
 This add-on is designed to unload inactive tabs to free up browser memory. It is the full-featured successor of the BarTab / BarTab Heavy (Tycho) / BarTab Lite (X) extensions family, which uses modern APIs to ensure maximum performance and no conflicts with built-in browser functions and other extensions.
 
