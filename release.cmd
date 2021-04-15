@@ -6,4 +6,4 @@ sed -i -E "s/version>.+?</version>%VER%</; s/download\/.+?\/lull-the-tabs-.+?\.x
 
 set XPI=lull-the-tabs-%VER%.xpi
 if exist %XPI% del %XPI%
-zip -r9q %XPI% * -x .git/* .gitignore update.xml LICENSE README.md *.cmd *.xpi *.exe
+zip -r9q %XPI% * -x .git/* .gitignore update.xml LICENSE README.md *.cmd *.xpi *.exe *.sh
