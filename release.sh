@@ -7,7 +7,7 @@ zip_with_p7z() {
 	list_files | xargs -0 $Zip_Archiver a . -so -tzip > $XPI -mmt=1 -mx=9
 }
 zip_with_InfoZip() {
-    list_files | xargs -0 zip -r9q - > $XPI
+	list_files | xargs -0 zip -r9q - > $XPI
 }
 
 VER=1.5.2
